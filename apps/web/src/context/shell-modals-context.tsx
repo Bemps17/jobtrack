@@ -3,8 +3,6 @@
 import { DetailModal } from "@/components/modals/detail-modal";
 import { DuplicateModal } from "@/components/modals/duplicate-modal";
 import { FormModal } from "@/components/modals/form-modal";
-import { ImportModal } from "@/components/modals/import-modal";
-import { downloadCsvTemplate } from "@/lib/csv-template";
 import type { Candidature } from "@/lib/types";
 import {
   createContext,
@@ -15,20 +13,17 @@ import {
   type ReactNode,
 } from "react";
 import { useCandidatures } from "./candidatures-context";
-import { useToast } from "./toast-context";
 
 type ShellModalsContextValue = {
   openFormNew: () => void;
   openFormEdit: (id: string) => void;
   openDetail: (id: string) => void;
-  openImport: () => void;
-  downloadTemplate: () => void;
+  openDuplicateModal: () => void;
 };
 
 const ShellModalsContext = createContext<ShellModalsContextValue | null>(null);
 
 export function ShellModalsProvider({ children }: { children: ReactNode }) {
-  const { show } = useToast();
   const {
     candidatures,
     addCandidature,
@@ -39,7 +34,6 @@ export function ShellModalsProvider({ children }: { children: ReactNode }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [importOpen, setImportOpen] = useState(false);
   const [dupOpen, setDupOpen] = useState(false);
 
   const editing = editingId
@@ -64,12 +58,7 @@ export function ShellModalsProvider({ children }: { children: ReactNode }) {
     setDetailId(id);
   }, []);
 
-  const openImport = useCallback(() => setImportOpen(true), []);
-
-  const downloadTemplate = useCallback(
-    () => downloadCsvTemplate((m) => show(m)),
-    [show]
-  );
+  const openDuplicateModal = useCallback(() => setDupOpen(true), []);
 
   const handleSaveForm = useCallback(
     async (data: Omit<Candidature, "id" | "_createdAt">) => {
@@ -96,8 +85,7 @@ export function ShellModalsProvider({ children }: { children: ReactNode }) {
         openFormNew,
         openFormEdit,
         openDetail,
-        openImport,
-        downloadTemplate,
+        openDuplicateModal,
       }}
     >
       {children}
@@ -116,14 +104,6 @@ export function ShellModalsProvider({ children }: { children: ReactNode }) {
         onClose={() => setDetailId(null)}
         onEdit={() => detail && openFormEdit(detail.id)}
         onDelete={() => detail && void handleDelete(detail.id)}
-      />
-      <ImportModal
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onDuplicates={() => {
-          setImportOpen(false);
-          setDupOpen(true);
-        }}
       />
       <DupCloser dupOpen={dupOpen} setDupOpen={setDupOpen} />
     </ShellModalsContext.Provider>

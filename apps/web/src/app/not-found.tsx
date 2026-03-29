@@ -1,18 +1,16 @@
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function NotFound() {
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4">
       <h1 className="text-2xl font-semibold">Page introuvable</h1>
-      <p className="text-center text-sm text-[var(--text2)]">
+      <p className="text-center text-sm text-muted-foreground">
         Cette adresse n’existe pas ou a été déplacée.
       </p>
-      <Link
-        href="/"
-        className="text-sm font-medium text-[var(--accent)] underline underline-offset-4"
-      >
-        Retour à l’accueil
-      </Link>
+      <Button asChild variant="link" className="text-sm font-medium">
+        <Link href="/">Retour à l’accueil</Link>
+      </Button>
     </div>
   );
 }

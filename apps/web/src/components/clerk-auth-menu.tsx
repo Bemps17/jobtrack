@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import {
   Show,
   SignInButton,
@@ -13,20 +14,21 @@ export function ClerkAuthMenu() {
       <Show when="signed-out">
         <div className="flex flex-col gap-1.5">
           <SignInButton mode="modal">
-            <button
+            <Button
               type="button"
-              className="nav-item flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] font-medium bg-[var(--accent)] text-white w-full"
+              className="nav-item w-full justify-center rounded-md px-3 py-2 text-[13px] font-medium"
             >
               Connexion
-            </button>
+            </Button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <button
+            <Button
               type="button"
-              className="nav-item flex items-center justify-center gap-2 px-3 py-2 rounded-md text-[13px] text-[var(--text2)] border border-[var(--border)] w-full hover:bg-[var(--surface2)]"
+              variant="outline"
+              className="nav-item w-full justify-center rounded-md px-3 py-2 text-[13px]"
             >
               Créer un compte
-            </button>
+            </Button>
           </SignUpButton>
         </div>
       </Show>

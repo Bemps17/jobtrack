@@ -12,7 +12,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  *
  * @see https://clerk.com/docs/integrations/databases/supabase
  */
-export function useClerkJwtForSupabase(): boolean {
+export function isSupabaseClerkJwtEnabled(): boolean {
   return process.env.SUPABASE_USE_CLERK_JWT === "true";
 }
 

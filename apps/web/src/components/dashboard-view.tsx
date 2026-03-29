@@ -1,7 +1,9 @@
 "use client";
 
+import { CardStatusChip } from "@/components/card-status-chip";
+import { Button } from "@/components/ui/button";
 import { PIPELINE_STATUSES } from "@/lib/constants";
-import { badgeClass, fmtDate, norm } from "@/lib/candidature-utils";
+import { fmtDate, isRelanceDueOrFlagged, norm } from "@/lib/candidature-utils";
 import { useCandidatures } from "@/context/candidatures-context";
 import { useShellModals } from "@/context/shell-modals-context";
 import Link from "next/link";
@@ -26,8 +28,7 @@ function Greeting() {
 
 export function DashboardView() {
   const { candidatures, relanceCount } = useCandidatures();
-  const { openFormNew, openImport, downloadTemplate, openDetail } =
-    useShellModals();
+  const { openFormNew, openDetail } = useShellModals();
   const C = candidatures;
   const total = C.length;
   const envoye = C.filter(
@@ -39,7 +40,7 @@ export function DashboardView() {
     )
   ).length;
   const refus = C.filter((c) => norm(c.status) === "refusée").length;
-  const relances = C.filter((c) => norm(c.status) === "relance à faire").length;
+  const relances = C.filter((c) => isRelanceDueOrFlagged(c)).length;
   const offres = C.filter((c) =>
     ["offre reçue", "acceptée"].includes(norm(c.status))
   ).length;
@@ -77,28 +78,19 @@ export function DashboardView() {
           </h1>
           <Greeting />
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          <button
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button variant="secondary" className="text-xs md:text-sm" asChild>
+            <Link href="/donnees" className="no-underline">
+              ⇅ <span className="hidden sm:inline">Import / export</span>
+            </Link>
+          </Button>
+          <Button
             type="button"
-            className="btn btn-ghost text-xs md:text-sm"
-            onClick={downloadTemplate}
-          >
-            ⬇ <span className="hidden sm:inline">Modèle CSV</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary text-xs md:text-sm"
-            onClick={openImport}
-          >
-            ⬆ <span className="hidden sm:inline">Importer CSV</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary text-xs md:text-sm"
+            className="text-xs md:text-sm"
             onClick={openFormNew}
           >
             + Ajouter
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -162,25 +154,36 @@ export function DashboardView() {
         ) : (
           <div className="flex flex-col gap-2">
             {recent.map((c) => (
-              <button
+              <div
                 key={c.id}
-                type="button"
-                className="recent-row text-left w-full"
+                role="button"
+                tabIndex={0}
+                className="recent-row text-left"
                 onClick={() => openDetail(c.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openDetail(c.id);
+                  }
+                }}
               >
-                <div className="font-semibold text-[13px] min-w-[100px] shrink-0">
-                  {c.company}
+                <div className="min-w-0 w-full sm:flex-1">
+                  <div className="font-semibold text-[13px] break-words [overflow-wrap:anywhere]">
+                    {c.company}
+                  </div>
+                  {c.job_title ? (
+                    <div className="text-[12px] text-[var(--text2)] mt-0.5 line-clamp-2 sm:truncate">
+                      {c.job_title}
+                    </div>
+                  ) : null}
                 </div>
-                <div className="text-[12px] text-[var(--text2)] flex-1 truncate">
-                  {c.job_title}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0 sm:justify-end sm:ml-auto">
+                  <CardStatusChip c={c} className="max-w-full" />
+                  <span className="text-[11px] text-[var(--text3)] whitespace-nowrap">
+                    {fmtDate(c.date_applied || c.date_found)}
+                  </span>
                 </div>
-                <span className={`badge shrink-0 ${badgeClass(c.status)}`}>
-                  {c.status || "—"}
-                </span>
-                <span className="text-[11px] text-[var(--text3)] whitespace-nowrap">
-                  {fmtDate(c.date_applied || c.date_found)}
-                </span>
-              </button>
+              </div>
             ))}
           </div>
         )}

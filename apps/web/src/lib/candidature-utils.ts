@@ -25,6 +25,110 @@ export function today(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+/** Jour calendaire local compact YYYYMMDD (pour comparer sans fuseau ISO-UTC). */
+function calendarDayLocal(d: Date): number {
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+export function todayCalendarDayLocal(): number {
+  return calendarDayLocal(new Date());
+}
+
+/** Parse `YYYY-MM-DD` ou date ISO en jour calendaire local YYYYMMDD. */
+export function calendarDayFromIsoDate(isoDay: string): number | null {
+  const s = String(isoDay ?? "").trim();
+  if (!s) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (m) {
+    const y = +m[1];
+    const mo = +m[2];
+    const da = +m[3];
+    if (mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+    return y * 10000 + mo * 100 + da;
+  }
+  const t = new Date(s);
+  if (Number.isNaN(t.getTime())) return null;
+  return calendarDayLocal(t);
+}
+
+/** La date (jour) est aujourd'hui ou dans le passé (relance à effectuer). */
+export function isDateOnOrBeforeToday(isoDay: string): boolean {
+  const day = calendarDayFromIsoDate(isoDay);
+  if (day === null) return false;
+  return day <= todayCalendarDayLocal();
+}
+
+/** Statuts où une relance suit l’envoi / le process (hors annonces non envoyées et dossiers clos). */
+const RELANCE_ACTIVE_STATUSES = new Set([
+  "envoyée",
+  "relance à faire",
+  "en attente",
+  "entretien rh",
+  "entretien technique",
+  "test technique",
+]);
+
+const RELANCE_BLOCKED_STATUSES = new Set([
+  "",
+  "à envoyer",
+  "refusée",
+  "acceptée",
+  "offre reçue",
+]);
+
+/**
+ * Candidature à faire figurer dans Relances si :
+ * - statut explicite « relance à faire », ou
+ * - statut encore actif (postulé / en cours), `follow_up_date` renseignée et date ≤ aujourd’hui.
+ */
+export function isRelanceDueOrFlagged(c: Candidature): boolean {
+  const st = norm(c.status);
+  if (st === "relance à faire") return true;
+  if (!st || RELANCE_BLOCKED_STATUSES.has(st)) return false;
+  if (!RELANCE_ACTIVE_STATUSES.has(st)) return false;
+  const fu = c.follow_up_date?.trim();
+  if (!fu) return false;
+  return isDateOnOrBeforeToday(fu);
+}
+
+/** Tri relances : date de relance la plus ancienne d’abord (les plus en retard). */
+export function compareRelancePriority(a: Candidature, b: Candidature): number {
+  const da = calendarDayFromIsoDate(a.follow_up_date?.trim() || "") ?? 99999999;
+  const db = calendarDayFromIsoDate(b.follow_up_date?.trim() || "") ?? 99999999;
+  if (da !== db) return da - db;
+  return norm(a.company).localeCompare(norm(b.company));
+}
+
+/** Ajoute des jours à une date `YYYY-MM-DD` (midi UTC pour limiter les décalages fuseau). */
+export function addDaysFromIso(isoDay: string, days: number): string {
+  const d = new Date(`${isoDay}T12:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+/**
+ * Passage à « envoyée » (depuis un autre statut) : remplit automatiquement
+ * `date_applied` (aujourd'hui) et `follow_up_date` (J+7).
+ * Ne modifie jamais `date_found` (date annonce / découverte).
+ * Déjà « envoyée » : laisse les dates telles qu’éditées par l’utilisateur.
+ */
+export function applyEnvoyeeTransitionRules(
+  before: { status: string } | null | undefined,
+  after: Candidature
+): Candidature {
+  const prev = before ? norm(before.status) : "";
+  const next = norm(after.status);
+  if (next !== "envoyée" || prev === "envoyée") {
+    return after;
+  }
+  const t = today();
+  return {
+    ...after,
+    date_applied: t,
+    follow_up_date: addDaysFromIso(t, 7),
+  };
+}
+
 export function badgeClass(status: string): string {
   const map: Record<string, string> = {
     "à envoyer": "badge-envoyer",

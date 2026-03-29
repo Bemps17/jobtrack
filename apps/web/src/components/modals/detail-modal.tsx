@@ -1,6 +1,16 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { badgeClass, fmtDate, norm } from "@/lib/candidature-utils";
+import { cn } from "@/lib/utils";
 import type { Candidature } from "@/lib/types";
 
 export function DetailModal({
@@ -19,26 +29,21 @@ export function DetailModal({
   if (!open || !c) return null;
 
   return (
-    <div
-      className="modal-overlay open"
-      role="dialog"
-      aria-modal="true"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="modal modal-lg max-w-[560px]">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h2 className="text-lg font-bold">{c.company}</h2>
-            <p className="text-[var(--text2)] text-sm">{c.job_title}</p>
-          </div>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-        <div className="mb-3 flex items-center gap-2">
-          <span className={`badge ${badgeClass(c.status)}`}>{c.status || "—"}</span>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-[560px] gap-4 sm:max-w-[560px]">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-lg font-bold">{c.company}</DialogTitle>
+          <p className="text-sm text-muted-foreground">{c.job_title}</p>
+        </DialogHeader>
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <Badge
+            variant="secondary"
+            className={cn("font-normal", badgeClass(c.status))}
+          >
+            {c.status || "—"}
+          </Badge>
           {c.priority ? (
-            <span className="text-[11px] text-[var(--text2)] flex items-center">
+            <span className="flex items-center text-[11px] text-muted-foreground">
               <span className={`priority-dot ${norm(c.priority)}`} />
               {c.priority}
             </span>
@@ -58,18 +63,18 @@ export function DetailModal({
           ].map(([k, v]) =>
             v ? (
               <div key={k}>
-                <dt className="text-[var(--text3)] text-[11px]">{k}</dt>
+                <dt className="text-[11px] text-muted-foreground">{k}</dt>
                 <dd>{v}</dd>
               </div>
             ) : null
           )}
           {c.contact_email ? (
             <div className="col-span-2">
-              <dt className="text-[var(--text3)] text-[11px]">Email</dt>
+              <dt className="text-[11px] text-muted-foreground">Email</dt>
               <dd>
                 <a
                   href={`mailto:${c.contact_email}`}
-                  className="text-[var(--accent)] hover:underline"
+                  className="text-primary hover:underline"
                 >
                   {c.contact_email}
                 </a>
@@ -78,13 +83,13 @@ export function DetailModal({
           ) : null}
           {c.job_url ? (
             <div className="col-span-2">
-              <dt className="text-[var(--text3)] text-[11px]">URL</dt>
+              <dt className="text-[11px] text-muted-foreground">URL</dt>
               <dd>
                 <a
                   href={c.job_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--accent)] break-all hover:underline"
+                  className="break-all text-primary hover:underline"
                 >
                   {c.job_url}
                 </a>
@@ -93,22 +98,22 @@ export function DetailModal({
           ) : null}
         </dl>
         {c.notes ? (
-          <div className="mt-4">
-            <div className="text-[11px] text-[var(--text3)] mb-1">Notes</div>
-            <div className="text-[13px] whitespace-pre-wrap text-[var(--text2)] border border-[var(--border)] rounded p-3">
+          <div className="mt-1">
+            <div className="mb-1 text-[11px] text-muted-foreground">Notes</div>
+            <div className="rounded-md border border-border bg-muted/30 p-3 text-[13px] whitespace-pre-wrap text-muted-foreground">
               {c.notes}
             </div>
           </div>
         ) : null}
-        <div className="flex justify-end gap-2 mt-6">
-          <button type="button" className="btn btn-ghost" onClick={onDelete}>
+        <DialogFooter className="gap-2 sm:justify-end">
+          <Button type="button" variant="ghost" onClick={onDelete}>
             Supprimer
-          </button>
-          <button type="button" className="btn btn-primary" onClick={onEdit}>
+          </Button>
+          <Button type="button" onClick={onEdit}>
             Modifier
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

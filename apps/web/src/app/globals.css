@@ -1,46 +1,124 @@
 @import "tailwindcss";
 
+/* BF Design System v1 — oklch · dark first · alias JobTrack (--bg, --accent, …) */
 :root,
 [data-theme="dark"] {
-  --bg: #0b0d12;
-  --bg2: #10141c;
-  --surface: #151a25;
-  --surface2: #1c2232;
-  --surface3: #232b3e;
-  --border: #252e42;
-  --border2: #2e3a52;
-  --accent: #4f8ef7;
-  --accent-dim: rgba(79, 142, 247, 0.12);
-  --accent2: #6ee7b7;
-  --warn: #fbbf24;
-  --danger: #f87171;
-  --text: #e2e8f0;
-  --text2: #94a3b8;
-  --text3: #4a5568;
-  --radius: 10px;
-  --radius-sm: 6px;
-  --radius-lg: 14px;
+  --background: oklch(0.1 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.15 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.646 0.222 41.116);
+  --primary-foreground: oklch(0.985 0 0);
+  --primary-hover: oklch(0.56 0.222 41.116);
+  --secondary: oklch(0.2 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent-secondary: oklch(0.75 0.14 195);
+  --destructive: oklch(0.6 0.25 25);
+  --border-token: oklch(0.25 0 0);
+  --input-bg: oklch(0.25 0 0);
+  --ring: oklch(0.646 0.222 41.116);
+  --popover: oklch(0.15 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.7 0.15 50);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  /* Alias historiques JobTrack → tokens BF */
+  --bg: var(--background);
+  --bg2: oklch(0.12 0 0);
+  --surface: var(--card);
+  --surface2: var(--secondary);
+  --surface3: oklch(0.23 0 0);
+  --border: var(--border-token);
+  --border2: oklch(0.32 0 0);
+  --border-hover: oklch(0.35 0 0);
+  --accent: var(--primary);
+  --accent-dim: oklch(0.646 0.222 41.116 / 0.15);
+  --accent2: var(--accent-secondary);
+  --warn: oklch(0.85 0.16 85);
+  --danger: var(--destructive);
+  --text: var(--foreground);
+  --text2: var(--muted-foreground);
+  --text3: oklch(0.55 0 0);
+
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --dur: 0.18s;
 }
 
 [data-theme="light"] {
-  --bg: #f4f6fb;
-  --bg2: #eef1f8;
-  --surface: #ffffff;
-  --surface2: #f0f3fa;
-  --surface3: #e6eaf4;
-  --border: #d8dff0;
-  --border2: #c5ceea;
-  --text: #1a2035;
-  --text2: #4a5568;
-  --text3: #a0aec0;
-  --accent-dim: rgba(79, 142, 247, 0.1);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.55 0.222 41.116);
+  --primary-foreground: oklch(0.985 0 0);
+  --primary-hover: oklch(0.48 0.22 41.116);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.145 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent-secondary: oklch(0.55 0.14 195);
+  --destructive: oklch(0.55 0.22 25);
+  --border-token: oklch(0.922 0 0);
+  --input-bg: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.222 41.116);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  --bg: var(--background);
+  --bg2: oklch(0.97 0 0);
+  --surface: var(--card);
+  --surface2: var(--muted);
+  --surface3: oklch(0.94 0 0);
+  --border: var(--border-token);
+  --border2: oklch(0.88 0 0);
+  --border-hover: oklch(0.82 0 0);
+  --accent: var(--primary);
+  --accent-dim: oklch(0.55 0.222 41.116 / 0.12);
+  --accent2: var(--accent-secondary);
+  --text: var(--foreground);
+  --text2: var(--muted-foreground);
+  --text3: oklch(0.65 0 0);
 }
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* shadcn/ui — utilitaires Tailwind (bg-primary, text-muted-foreground, …) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  /* Surface de survol shadcn (ghost, outline) — distinct du token JobTrack --accent */
+  --color-accent: var(--muted);
+  --color-accent-foreground: var(--foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--primary-foreground);
+  --color-border: var(--border-token);
+  --color-input: var(--input-bg);
+  --color-ring: var(--ring);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 }
 
 html {
@@ -53,7 +131,7 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
 .nav-item.active {
@@ -103,7 +181,7 @@ body {
   transition: all var(--dur) var(--ease);
 }
 .card:hover {
-  border-color: var(--accent);
+  border-color: var(--border-hover);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
@@ -128,7 +206,11 @@ body {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--primary-foreground);
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 .btn-secondary {
   background: var(--surface2);
@@ -145,40 +227,49 @@ body {
   border: 1px solid transparent;
 }
 .badge-envoyer {
-  background: rgba(100, 116, 139, 0.15);
-  color: #94a3b8;
+  background: oklch(0.25 0 0 / 0.5);
+  color: oklch(0.708 0 0);
+  border-color: oklch(0.35 0 0 / 0.5);
 }
 .badge-envoyee {
-  background: rgba(79, 142, 247, 0.15);
-  color: #93c5fd;
+  background: oklch(0.646 0.222 41.116 / 0.15);
+  color: oklch(0.8 0.15 41.116);
+  border-color: oklch(0.646 0.222 41.116 / 0.3);
 }
 .badge-relance {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  background: oklch(0.7 0.15 50 / 0.15);
+  color: oklch(0.82 0.14 50);
+  border-color: oklch(0.7 0.15 50 / 0.3);
 }
 .badge-entretien {
-  background: rgba(110, 231, 183, 0.15);
-  color: #6ee7b7;
+  background: oklch(0.75 0.14 195 / 0.15);
+  color: oklch(0.85 0.12 195);
+  border-color: oklch(0.75 0.14 195 / 0.3);
 }
 .badge-attente {
-  background: rgba(167, 139, 250, 0.15);
-  color: #c4b5fd;
+  background: oklch(0.627 0.265 303.9 / 0.15);
+  color: oklch(0.78 0.18 303.9);
+  border-color: oklch(0.627 0.265 303.9 / 0.3);
 }
 .badge-refuse {
-  background: rgba(248, 113, 113, 0.15);
-  color: #fca5a5;
+  background: oklch(0.645 0.246 16.439 / 0.15);
+  color: oklch(0.78 0.2 16.439);
+  border-color: oklch(0.645 0.246 16.439 / 0.3);
 }
 .badge-offre {
-  background: rgba(251, 191, 36, 0.2);
-  color: #fde68a;
+  background: oklch(0.769 0.188 70.08 / 0.18);
+  color: oklch(0.88 0.16 70.08);
+  border-color: oklch(0.769 0.188 70.08 / 0.35);
 }
 .badge-default {
-  background: rgba(100, 116, 139, 0.1);
-  color: #94a3b8;
+  background: oklch(0.25 0 0 / 0.35);
+  color: oklch(0.708 0 0);
+  border-color: oklch(0.35 0 0 / 0.4);
 }
 .badge-warn {
-  background: rgba(251, 191, 36, 0.2);
-  color: #fbbf24;
+  background: oklch(0.85 0.16 85 / 0.2);
+  color: oklch(0.72 0.14 85);
+  border-color: oklch(0.85 0.16 85 / 0.35);
 }
 
 .priority-dot {
@@ -226,19 +317,21 @@ body {
 input,
 select,
 textarea {
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   color: var(--text);
   padding: 8px 10px;
   font-size: 13px;
   width: 100%;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ring) 35%, transparent);
 }
 
 .pipeline-col {
@@ -259,16 +352,26 @@ textarea:focus {
 
 .recent-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 11px 14px;
   cursor: pointer;
 }
+@media (min-width: 640px) {
+  .recent-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+}
 .recent-row:hover {
-  border-color: var(--accent);
+  border-color: var(--border-hover);
 }
 
 .drop-zone {

@@ -1,5 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
+import { isJobtrackDevAuthBypass } from "@/lib/dev-auth-bypass";
+
 /**
  * Next.js 15 : le fichier doit s’appeler `middleware.ts` à la racine de `src/`.
  * La doc Clerk « Next.js 16+ » utilise `proxy.ts` avec le même contenu.
@@ -11,6 +13,9 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  if (isJobtrackDevAuthBypass()) {
+    return;
+  }
   if (!isPublicRoute(req)) {
     await auth.protect();
   }

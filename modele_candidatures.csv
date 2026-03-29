@@ -1,2 +1,28 @@
-﻿company,job_title,contract_type,location,work_mode,source,job_url,date_found,date_applied,status,priority,salary,contact_name,contact_email,follow_up_date,notes
+# JobTrack — modèle d’import CSV.
+# Les lignes commençant par # sont ignorées à l’import (tu peux les laisser dans ton fichier).
+#
+# ── Remplir depuis une annonce ou un site d’emploi ──
+# 1) Copie le texte de l’offre (et l’URL) depuis LinkedIn, WTTJ, Indeed, le site de l’employeur, etc.
+# 2) Colle le bloc « PROMPT IA » ci-dessous dans ChatGPT, Copilot, Cursor… puis colle l’annonce.
+# 3) Récupère la ligne CSV produite et ajoute-la sous la ligne d’en-têtes (company, job_title, …).
+#
+# PROMPT IA (à coller tel quel puis compléter avec l’annonce) :
+# ---
+# Tu extrais UNE offre d’emploi vers une seule ligne CSV pour l’application JobTrack.
+# Colonnes, dans cet ordre, séparateur virgule, guillemets doubles si un champ contient une virgule :
+# company, job_title, contract_type, location, work_mode, source, job_url, date_found, date_applied, status, priority, salary, contact_name, contact_email, follow_up_date, notes.
+# Règles :
+# - contract_type : uniquement parmi cdi, cdd, freelance, alternance, stage, autre, ou vide.
+# - work_mode : uniquement remote, hybride, présentiel, ou vide.
+# - status : souvent "à envoyer" si la candidature n’est pas encore envoyée ; sinon une valeur du pipeline (envoyée, relance à faire, …).
+# - date_found : format AAAA-MM-JJ ; si inconnu, date du jour.
+# - date_applied et follow_up_date : vides si pas encore postulé.
+# - source : nom du site ou du canal (ex. LinkedIn, Welcome to the Jungle, site carrière).
+# - job_url : lien direct vers l’annonce si disponible.
+# - notes : faits utiles (compétences, stack, télétravail, délai).
+# Réponds UNIQUEMENT avec la ligne de valeurs CSV (sans répéter la ligne d’en-tête), sans code markdown.
+# ---
+#
+# Exemple de ligne de données sous l’en-tête :
+company,job_title,contract_type,location,work_mode,source,job_url,date_found,date_applied,status,priority,salary,contact_name,contact_email,follow_up_date,notes
 "Acme Corp","Développeur Front-End","CDI","Paris","hybride","LinkedIn","https://example.com/offre","2026-03-29","","à envoyer","haute","45k-55k","Sophie Martin","s.martin@acme.com","","React TypeScript, produit SaaS"

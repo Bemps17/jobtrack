@@ -49,13 +49,13 @@ export const PIPELINE_STATUSES: {
   color: string;
 }[] = [
   { key: "à envoyer", label: "À envoyer", color: "#64748b" },
-  { key: "envoyée", label: "Envoyée", color: "#4f8ef7" },
-  { key: "relance à faire", label: "Relance", color: "#fbbf24" },
-  { key: "entretien rh", label: "Entretien", color: "#6ee7b7" },
-  { key: "entretien technique", label: "Tech", color: "#6ee7b7" },
-  { key: "test technique", label: "Test", color: "#a78bfa" },
-  { key: "en attente", label: "Attente", color: "#a78bfa" },
-  { key: "offre reçue", label: "Offre", color: "#fde68a" },
-  { key: "acceptée", label: "Acceptée", color: "#4ade80" },
-  { key: "refusée", label: "Refusée", color: "#f87171" },
+  { key: "envoyée", label: "Envoyée", color: "#E8602C" },
+  { key: "relance à faire", label: "Relance", color: "#D4A017" },
+  { key: "entretien rh", label: "Entretien", color: "#00C8E0" },
+  { key: "entretien technique", label: "Tech", color: "#00C8E0" },
+  { key: "test technique", label: "Test", color: "#A855F7" },
+  { key: "en attente", label: "Attente", color: "#C084FC" },
+  { key: "offre reçue", label: "Offre", color: "#EAB308" },
+  { key: "acceptée", label: "Acceptée", color: "#22C55E" },
+  { key: "refusée", label: "Refusée", color: "#E85D4C" },
 ];

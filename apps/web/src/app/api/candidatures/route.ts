@@ -1,9 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import {
   readCandidatures,
   writeCandidatures,
 } from "@/server/candidatures-store";
+import { getJobtrackClerkUserId } from "@/server/jobtrack-auth";
 
 function serializeUnknownError(e: unknown): string {
   if (e && typeof e === "object") {
@@ -19,7 +19,7 @@ function serializeUnknownError(e: unknown): string {
 }
 
 export async function GET() {
-  const { userId } = await auth();
+  const userId = await getJobtrackClerkUserId();
   if (!userId) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
@@ -40,7 +40,7 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  const { userId } = await auth();
+  const userId = await getJobtrackClerkUserId();
   if (!userId) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }

@@ -1,6 +1,6 @@
 import type { Candidature } from "@/lib/types";
 import { createSupabaseCandidaturesClient } from "@/server/supabase-candidatures-client";
-import { useClerkJwtForSupabase } from "@/server/supabase-clerk";
+import { isSupabaseClerkJwtEnabled } from "@/server/supabase-clerk";
 
 type DbRow = {
   id: string;
@@ -140,7 +140,7 @@ export async function readCandidaturesFromSupabase(
     .from("candidatures")
     .select("*")
     .order("created_at", { ascending: true });
-  if (!useClerkJwtForSupabase()) {
+  if (!isSupabaseClerkJwtEnabled()) {
     q = q.eq("user_id", clerkUserId);
   }
   const { data, error } = await q;
@@ -169,7 +169,7 @@ export async function writeCandidaturesToSupabase(
 
   if (rows.length === 0) {
     let sel = supabase.from("candidatures").select("id");
-    if (!useClerkJwtForSupabase()) {
+    if (!isSupabaseClerkJwtEnabled()) {
       sel = sel.eq("user_id", clerkUserId);
     }
     const { data: existing, error: selErr } = await sel;
@@ -179,7 +179,7 @@ export async function writeCandidaturesToSupabase(
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
         let del = supabase.from("candidatures").delete().in("id", chunk);
-        if (!useClerkJwtForSupabase()) {
+        if (!isSupabaseClerkJwtEnabled()) {
           del = del.eq("user_id", clerkUserId);
         }
         const { error: delErr } = await del;
@@ -199,7 +199,7 @@ export async function writeCandidaturesToSupabase(
 
   const wanted = new Set(rows.map((r) => r.id));
   let sel2 = supabase.from("candidatures").select("id");
-  if (!useClerkJwtForSupabase()) {
+  if (!isSupabaseClerkJwtEnabled()) {
     sel2 = sel2.eq("user_id", clerkUserId);
   }
   const { data: existing, error: selErr } = await sel2;
@@ -211,7 +211,7 @@ export async function writeCandidaturesToSupabase(
     const chunk = toDelete.slice(i, i + CHUNK);
     if (chunk.length === 0) continue;
     let del2 = supabase.from("candidatures").delete().in("id", chunk);
-    if (!useClerkJwtForSupabase()) {
+    if (!isSupabaseClerkJwtEnabled()) {
       del2 = del2.eq("user_id", clerkUserId);
     }
     const { error: delErr } = await del2;

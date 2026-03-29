@@ -1,8 +1,7 @@
-import { CSV_COLUMNS } from "./constants";
 import { today } from "./candidature-utils";
+import { buildCsvTemplateFileBody } from "./csv-template-content";
 
 export function downloadCsvTemplate(toast: (msg: string) => void) {
-  const header = CSV_COLUMNS.join(",");
   const example = [
     '"Acme Corp"',
     '"Développeur Front-End"',
@@ -22,7 +21,8 @@ export function downloadCsvTemplate(toast: (msg: string) => void) {
     '"React TypeScript, produit SaaS"',
   ].join(",");
 
-  const blob = new Blob(["\uFEFF" + header + "\n" + example + "\n"], {
+  const body = buildCsvTemplateFileBody(example);
+  const blob = new Blob(["\uFEFF" + body], {
     type: "text/csv;charset=utf-8;",
   });
   const url = URL.createObjectURL(blob);

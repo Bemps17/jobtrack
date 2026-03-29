@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4f8ef7",
+  themeColor: "#E8602C",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -47,7 +47,7 @@ export default function RootLayout({
       >
         <ClerkProvider
           appearance={{
-            variables: { colorPrimary: "#4f8ef7" },
+            variables: { colorPrimary: "#E8602C" },
           }}
           signInUrl="/sign-in"
           signUpUrl="/sign-up"

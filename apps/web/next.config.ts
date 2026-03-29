@@ -11,6 +11,11 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  /** Évite des chunks manquants (ex. ./383.js) quand le cache disque Webpack/.next est désynchronisé en dev. */
+  webpack: (config, { dev }) => {
+    if (dev) config.cache = false;
+    return config;
+  },
 };
 
 export default withPWA(nextConfig);

@@ -1,13 +1,13 @@
 "use client";
 
+import { Toaster } from "@/components/ui/sonner";
 import {
   createContext,
   useCallback,
   useContext,
-  useRef,
-  useState,
   type ReactNode,
 } from "react";
+import { toast as sonnerToast } from "sonner";
 
 type ToastType = "success" | "error";
 
@@ -18,32 +18,15 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [msg, setMsg] = useState("");
-  const [type, setType] = useState<ToastType>("success");
-  const [visible, setVisible] = useState(false);
-  const t = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
   const show = useCallback((m: string, ty: ToastType = "success") => {
-    setMsg(m);
-    setType(ty);
-    setVisible(true);
-    clearTimeout(t.current);
-    t.current = setTimeout(() => setVisible(false), 3200);
+    if (ty === "error") sonnerToast.error(m);
+    else sonnerToast.success(m);
   }, []);
 
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div
-        id="toast"
-        role="status"
-        aria-live="polite"
-        className={`toast-fixed ${visible ? "toast-show" : ""} ${
-          type === "error" ? "toast-error" : "toast-success"
-        }`}
-      >
-        {msg}
-      </div>
+      <Toaster position="top-center" richColors closeButton />
     </ToastContext.Provider>
   );
 }

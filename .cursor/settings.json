@@ -1,0 +1,19 @@
+{
+  "plugins": {
+    "vercel": {
+      "enabled": true
+    },
+    "supabase": {
+      "enabled": true
+    },
+    "cursor-team-kit": {
+      "enabled": true
+    },
+    "clerk": {
+      "enabled": true
+    },
+    "render": {
+      "enabled": true
+    }
+  }
+}

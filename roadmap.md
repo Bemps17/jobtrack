@@ -22,7 +22,9 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 | `apps/web/src/middleware.ts` | **Clerk** : routes protégées sauf `/sign-in`, `/sign-up`, `/api/health`. |
 | `apps/web/public/` | `manifest.webmanifest`, `icons/` ; **`sw.js`** généré au build (**PWA** ; désactivé en `next dev`). |
 | `apps/web/data/` | `candidatures.json` (gitignored) — persistance locale si Supabase n’est pas configuré pour l’environnement. |
-| `apps/web/.env.example` | Clerk, Supabase (URL, anon, service role), `SUPABASE_USE_CLERK_JWT`, `CLERK_SUPABASE_JWT_TEMPLATE` (optionnel). |
+| `apps/web/.env.example` | Clerk, Supabase (URL, anon, service role), `SUPABASE_USE_CLERK_JWT`, `CLERK_SUPABASE_JWT_TEMPLATE` (optionnel), **`GROQ_API_KEY`** (extraction IA). |
+| `apps/web/src/app/(app)/donnees/` | Page **Import / export** : CSV & JSON, collage, JSON Lines, extraction **Groq** (`/api/groq/extract`). |
+| `apps/web/src/app/api/groq/extract/` | **POST** — Chat Completions Groq ; clé serveur uniquement. |
 | `prompts/` | Prompts agents (**Comet** : Supabase, Clerk, migration RLS) + référence Cursor **Clerk JWT / RLS**. |
 | `archive/legacy-express-api/` | Ancienne API Express (référence). |
 | `archive/legacy-static-web/` | Ancienne SPA HTML/JS. |
@@ -48,12 +50,22 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 - **Qualité** : messages d’erreur API enrichis en dev ; dates normalisées pour Postgres ; script **`npm run test:supabase`** ; page **`not-found`** ; correctif clés React dupliquées (**liste** : pastilles contrat / lieu / mode).
 - **Documentation** : prompts **Comet** (Clerk, migration RLS), **`prompts/cursor-clerk-jwt-supabase-rls.md`**, SQL **`prompts/supabase-user-id-clerk-rls.sql`**, `.npmrc` **legacy-peer-deps** pour Clerk + React 19.
 
+### Complément v0.2.0 *(import / export & Groq, 2026-03-29)*
+
+- **Page `/donnees`** (« Import / export ») dans la barre latérale ; le dashboard pointe vers cette page.
+- **Export** : **CSV** (UTF-8 avec BOM) et **JSON** ; téléchargement du **modèle CSV** (inchangé côté métier).
+- **Import CSV** : fichier ou **collage** (avec en-tête) ; lignes `#` ignorées comme avant.
+- **Import JSON** : **tableau** d’objets ou **JSON Lines** (une ligne = une candidature).
+- **Groq** : route **`POST /api/groq/extract`** ([Chat Completions](https://console.groq.com/docs/api-reference#chat-create)) — prompt **système personnalisable** (défaut dans `groq-prompt-defaults.ts`), modèle / température / max tokens, persistance **localStorage** ; extraction d’**une ligne CSV** alignée sur les colonnes JobTrack, puis fusion avec la détection de **doublons** existante.
+- **Variables** : `GROQ_API_KEY` dans **`.env.local`** (documenté dans `.env.example`) — jamais exposée au client.
+
 ---
 
 ## État actuel (limites connues)
 
 - **Données** : JSON local **sans** isolation multi-utilisateur ; Supabase **avec** `user_id` + filtre ou RLS selon le mode — pas de résolution de conflits si deux sessions écrivent en parallèle.
 - **CSV** : en-têtes sensibles à la casse / nom exact des colonnes (`company`, `job_title`, …).
+- **Groq** : sans **`GROQ_API_KEY`** côté serveur, l’extraction IA renvoie une erreur explicite (le reste import/export fonctionne).
 - **Qualité** : pas de suite de tests automatisés ; peu de couverture accessibilité ; **build prod** peut encore échouer sur le prerender de certaines pages (webpack) — à traiter.
 - **Sécurité** : exposition publique nécessite **Clerk** + secrets **Vercel** corrects ; ne jamais publier **service role** ou **CLERK_SECRET_KEY** côté client.
 
@@ -65,7 +77,7 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 
 | Idée | Intérêt |
 |------|---------|
-| **Export / import JSON** (même schéma que l’API) | Sauvegarde manuelle, migration, restauration. |
+| ~~**Export / import JSON**~~ | **Livré** (page `/donnees`) — sauvegarde / restauration ; **JSONL** en plus. |
 | **Version de schéma** dans le JSON stocké + migration légère | Évolutions de champs sans casser les anciens fichiers. |
 | **Normalisation des en-têtes CSV** | Accepter `Company`, alias, trim — moins d’échecs d’import. |
 | **`_updatedAt`** systématique sur les enregistrements modifiés | Tri et audit. |
@@ -112,7 +124,7 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 | Thème clair / sombre | **Livré** v0.1.0 | Toggle présent ; **persistance** préférence + **thème système** = complément (doc §3.1). |
 | PWA / mobile installable | **Livré** (build prod) | Affiner **responsive** et parcours tactile = enrichissement doc §4.5. |
 | Relances / rappels (7j, 14j, badges) | Oui (proche) | **Relances calendaires** + `follow_up_date` — Phase 2 ; badges « en attente X jours » = **extension**. |
-| Export données (CSV, Excel, PDF) | Partiel | Roadmap **export / import JSON** ; **export CSV** (et Excel/PDF) = **à ajouter** explicitement (doc §2.6). |
+| Export données (CSV, Excel, PDF) | Partiel | **CSV + JSON** livrés (`/donnees`) ; **Excel / PDF** = à ajouter. |
 | Stats, graphiques, KPI avancés | Oui (partiel) | **KPIs** dashboard existants ; **analytics** (conversion, délais, sources) — évolution produit + Phase 4. |
 | Intégrations (LinkedIn, Gmail, Cal, Zapier) | Oui (vision) | Phase 4 **vision** ; pas de doublon de contenu, même horizon. |
 | Accessibilité & clavier | Oui (partiel) | **Accessibilité** modales — tableau UX ; **raccourcis globaux** (N, E, /, ↑↓) = **nouveau** (doc §2.2). |
@@ -148,7 +160,7 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 | Niveau | Exemples d’items | Lien roadmap |
 |--------|------------------|--------------|
 | **Haute** | Auto `date_applied` ; recherche / filtres enrichis ; toasts + loading ; dupliquer | Croiser **Phase 1–2** |
-| **Moyenne** | Raccourcis clavier ; DnD pipeline ; tags ; **export CSV** ; thème persisté + système | **Phase 2–3** |
+| **Moyenne** | Raccourcis clavier ; DnD pipeline ; tags ; ~~export CSV~~ **fait** ; thème persisté + système | **Phase 2–3** |
 | **Basse** | Intégrations tierces ; analytics poussés ; collaboration ; templates e-mail | **Phase 4** |
 
 ---
@@ -158,10 +170,10 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 ### Phase 1 — Stabilité et confiance *(court terme)*
 
 1. ~~Persistance serveur + chargement au démarrage~~ — **fait** (Next + `candidatures.json` / option Supabase).
-2. **Export / import JSON** (UI + téléchargement ou endpoint dédié).
+2. ~~**Export / import JSON**~~ — **fait** (page `/donnees`, schéma `Candidature` ; JSONL supporté).
 3. **Robustesse CSV** : en-têtes normalisés, messages d’erreur homogènes, encodage.
 4. **CI** GitHub Actions : au minimum `npm run build` sur `main`.
-5. *(UX — backlog ci-dessus)* **Quick wins** : loading states sauvegarde, **dupliquer** candidature, export **CSV** simple si prioritaire avant JSON complet.
+5. *(UX — backlog ci-dessus)* **Quick wins** : loading states sauvegarde, **dupliquer** candidature ; ~~export **CSV** simple~~ — **fait** sur `/donnees`.
 
 **Indicateur de succès** : sauvegarde JSON rejouable ; build vert sur le dépôt distant.
 
@@ -207,6 +219,7 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 | **1.2** | **2026-03-29** | Alignement **Next.js + PWA**, **v0.1.0**, dépôt **GitHub**, livrables barrés / phases réalistes, limites actuelles. |
 | **1.3** | **2026-03-29** | **Backlog UX/UI & QoL** intégré : tableau **doublons vs roadmap**, nouveautés, quick wins, priorisation sprints ; phases 1–2–4 ajustées. |
 | **1.4** | **2026-03-29** | **v0.2.0** : Clerk, Supabase `user_id` + modes service role / JWT RLS, prompts Comet & Cursor, correctifs UI ; roadmap et limites mises à jour. |
+| **1.5** | **2026-03-29** | Page **`/donnees`** (import/export CSV, JSON, JSONL), API **Groq** (`GROQ_API_KEY`), prompts IA personnalisables ; Phase 1 et backlog export mis à jour. |
 
 ---
 

@@ -4,8 +4,8 @@
   "description": "Suivi de candidatures et pipeline de recherche d'emploi",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0d12",
-  "theme_color": "#4f8ef7",
+  "background_color": "#191919",
+  "theme_color": "#E8602C",
   "lang": "fr",
   "icons": [
     {

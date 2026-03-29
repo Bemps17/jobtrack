@@ -1,6 +1,7 @@
 "use client";
 
 import { ClerkAuthMenu } from "@/components/clerk-auth-menu";
+import { Button } from "@/components/ui/button";
 import { useCandidatures } from "@/context/candidatures-context";
 import { useShellModals } from "@/context/shell-modals-context";
 import { useTheme } from "@/context/theme-context";
@@ -69,6 +70,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               {relanceCount}
             </span>
           </Link>
+          <Link
+            href="/donnees"
+            className={navCls("/donnees")}
+            onClick={() => setSidebarOpen(false)}
+          >
+            <span className="text-[15px] w-[18px] text-center">⇅</span>
+            <span className="text-[13px]">Import / export</span>
+          </Link>
         </nav>
         <div className="pt-3 border-t border-[var(--border)] space-y-2">
           <ClerkAuthMenu />
@@ -105,13 +114,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           ☰
         </button>
         <span className="text-[15px] font-bold text-[var(--accent)]">JobTrack</span>
-        <button
+        <Button
           type="button"
-          className="btn btn-primary py-1.5 px-3 text-xs"
+          className="px-3 py-1.5 text-xs"
           onClick={openFormNew}
         >
           + Ajouter
-        </button>
+        </Button>
       </header>
 
       <main className="flex-1 md:ml-64 min-h-screen pt-16 md:pt-0 p-4 md:p-8 max-w-[1400px]">

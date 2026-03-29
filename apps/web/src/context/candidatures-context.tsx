@@ -1,11 +1,14 @@
 "use client";
 
 import {
+  applyEnvoyeeTransitionRules,
   detectDuplicates,
+  isRelanceDueOrFlagged,
   mapRow,
   mergeCandidatures,
   validateHeaders,
 } from "@/lib/candidature-utils";
+import { stripLeadingHashCommentLines } from "@/lib/csv-template-content";
 import { buildSampleData, uid } from "@/lib/sample-data";
 import type { Candidature, DuplicatePair, ListFilters } from "@/lib/types";
 import Papa from "papaparse";
@@ -42,6 +45,21 @@ type CandidaturesContextValue = {
     dupCount: number;
     newCount: number;
   }>;
+  prepareJsonImport: (raw: unknown) => Promise<{
+    total: number;
+    valid: Candidature[];
+    errors: string[];
+    dupCount: number;
+    newCount: number;
+  }>;
+  /** Lignes déjà mappées (ex. extraction IA une ligne CSV). */
+  prepareImportFromParsed: (rows: Candidature[]) => {
+    total: number;
+    valid: Candidature[];
+    errors: string[];
+    dupCount: number;
+    newCount: number;
+  };
   clearImportArtifacts: () => void;
   setPendingAndDuplicates: (pending: Candidature[], dups: DuplicatePair[]) => void;
 };
@@ -133,17 +151,16 @@ export function CandidaturesProvider({ children }: { children: ReactNode }) {
     setFiltersState((f) => ({ ...f, ...patch }));
   }, []);
 
-  const relanceCount = candidatures.filter(
-    (c) => c.status.trim().toLowerCase() === "relance à faire"
-  ).length;
+  const relanceCount = candidatures.filter((c) => isRelanceDueOrFlagged(c)).length;
 
   const addCandidature = useCallback(
     async (data: Omit<Candidature, "id" | "_createdAt">) => {
-      const row: Candidature = {
+      const draft: Candidature = {
         ...data,
         id: uid(),
         _createdAt: new Date().toISOString(),
       };
+      const row = applyEnvoyeeTransitionRules(null, draft);
       const next = [row, ...candidaturesRef.current];
       setCandidatures(next);
       show("Candidature ajoutée ✓");
@@ -154,9 +171,11 @@ export function CandidaturesProvider({ children }: { children: ReactNode }) {
 
   const updateCandidature = useCallback(
     async (id: string, data: Partial<Candidature>) => {
-      const next = candidaturesRef.current.map((c) =>
-        c.id === id ? { ...c, ...data } : c
-      );
+      const next = candidaturesRef.current.map((c) => {
+        if (c.id !== id) return c;
+        const merged = { ...c, ...data };
+        return applyEnvoyeeTransitionRules(c, merged);
+      });
       setCandidatures(next);
       show("Candidature mise à jour ✓");
       await persistList(next, show);
@@ -272,15 +291,38 @@ export function CandidaturesProvider({ children }: { children: ReactNode }) {
   );
 
   const prepareCsvImport = useCallback(async (file: File) => {
+    let csvText: string;
+    try {
+      csvText = stripLeadingHashCommentLines(await file.text());
+    } catch {
+      show("Lecture du fichier impossible.", "error");
+      return {
+        total: 0,
+        valid: [],
+        errors: [],
+        dupCount: 0,
+        newCount: 0,
+      };
+    }
+    if (!csvText.trim()) {
+      show("CSV vide ou uniquement des lignes commentaires (#).", "error");
+      return {
+        total: 0,
+        valid: [],
+        errors: [],
+        dupCount: 0,
+        newCount: 0,
+      };
+    }
+
     const parsed = await new Promise<{
       valid: Candidature[];
       errors: string[];
       total: number;
     }>((resolve, reject) => {
-      Papa.parse<Record<string, string>>(file, {
+      Papa.parse<Record<string, string>>(csvText, {
         header: true,
         skipEmptyLines: true,
-        encoding: "UTF-8",
         complete(results) {
           const { ok, missing } = validateHeaders(results.meta.fields ?? []);
           if (!ok) {
@@ -296,7 +338,7 @@ export function CandidaturesProvider({ children }: { children: ReactNode }) {
           });
           resolve({ valid, errors, total: results.data.length });
         },
-        error: (err) => reject(new Error(err.message)),
+        error: (err: Error) => reject(new Error(err.message)),
       });
     });
 
@@ -310,6 +352,62 @@ export function CandidaturesProvider({ children }: { children: ReactNode }) {
       total: parsed.total,
       valid: parsed.valid,
       errors: parsed.errors,
+      dupCount: dups.length,
+      newCount: newItems.length,
+    };
+  }, [show]);
+
+  const prepareJsonImport = useCallback(
+    async (raw: unknown) => {
+      if (!Array.isArray(raw)) {
+        show("Le JSON doit être un tableau d’objets.", "error");
+        return {
+          total: 0,
+          valid: [] as Candidature[],
+          errors: [] as string[],
+          dupCount: 0,
+          newCount: 0,
+        };
+      }
+      const valid: Candidature[] = [];
+      const errors: string[] = [];
+      raw.forEach((item, i) => {
+        if (!item || typeof item !== "object") {
+          errors.push(`Entrée ${i + 1} : objet attendu.`);
+          return;
+        }
+        const { data, error } = mapRow(item as Record<string, unknown>, i + 1);
+        if (data) valid.push(data);
+        if (error) errors.push(error);
+      });
+      const { duplicates: dups, newItems } = detectDuplicates(
+        candidaturesRef.current,
+        valid
+      );
+      setPendingImport(newItems);
+      setDuplicates(dups);
+      return {
+        total: raw.length,
+        valid,
+        errors,
+        dupCount: dups.length,
+        newCount: newItems.length,
+      };
+    },
+    [show]
+  );
+
+  const prepareImportFromParsed = useCallback((rows: Candidature[]) => {
+    const { duplicates: dups, newItems } = detectDuplicates(
+      candidaturesRef.current,
+      rows
+    );
+    setPendingImport(newItems);
+    setDuplicates(dups);
+    return {
+      total: rows.length,
+      valid: rows,
+      errors: [] as string[],
       dupCount: dups.length,
       newCount: newItems.length,
     };
@@ -344,6 +442,8 @@ export function CandidaturesProvider({ children }: { children: ReactNode }) {
     resolveDuplicate,
     resolveAllDuplicates,
     prepareCsvImport,
+    prepareJsonImport,
+    prepareImportFromParsed,
     clearImportArtifacts,
     setPendingAndDuplicates,
   };
