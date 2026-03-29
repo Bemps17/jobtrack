@@ -1,0 +1,31 @@
+---
+description: Conventions JobTrack monorepo — version 0.1.0, Next.js, React, PWA
+alwaysApply: true
+---
+
+# JobTrack — règles projet
+
+## Versioning (obligatoire en ce cycle)
+
+- Version courante **0.1.0** : figée dans `apps/web/package.json` (`version`) et `src/lib/version.ts` (`APP_VERSION`).
+- Toute évolution publique (changelog, release) incrémente semver ; ne pas publier de version ambiguë sans bump documenté.
+- Les agent et commits doivent rester alignés avec **0.1.0** jusqu’à décision explicite de passage (ex. 0.2.0).
+
+## Stack
+
+- **Frontend** : Next.js 15 (App Router), React 19, TypeScript, Tailwind v4.
+- **PWA** : `@ducanh2912/next-pwa`, manifest dans `public/`, pas de désactivation arbitraire du SW en prod.
+- **API** : Route Handlers Next (`src/app/api/**`), persistance `apps/web/data/candidatures.json`.
+- **Langue** : UI et copy en **français** ; code et identifiants en anglais si idiomatique.
+
+## Pratiques
+
+- Pas de `dangerouslySetInnerHTML` pour des données utilisateur ; échapper ou texte brut React.
+- Préférer **Server Components** sauf besoin client (`useState`, events, hooks) — marquer `'use client'`.
+- Après mutation des candidatures : **`PUT /api/candidatures`** (liste complète) tant que le contrat API n’évolue pas.
+- Respecter la structure : `src/lib/*` (pur), `src/context/*`, `src/components/*`, `src/app/*` (routes).
+
+## Monorepo
+
+- Racine : `npm run dev` lance **Next** (`apps/web`, port **3000** par défaut ; si occupé, Next choisit **3001**). L’ancienne app Express est archivée sous `archive/legacy-express-api/`.
+- Ne pas réintroduire `apps/web/index.html` statique comme source principale.

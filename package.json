@@ -1,0 +1,17 @@
+{
+  "name": "jobtrack",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Monorepo JobTrack — Next.js 15 + PWA (v0.1.0)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @jobtrack/web",
+    "build": "npm run build -w @jobtrack/web",
+    "start": "npm run start -w @jobtrack/web"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

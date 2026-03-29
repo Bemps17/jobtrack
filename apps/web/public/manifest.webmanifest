@@ -1,0 +1,18 @@
+{
+  "name": "JobTrack — Suivi de candidatures",
+  "short_name": "JobTrack",
+  "description": "Suivi de candidatures et pipeline de recherche d'emploi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#4f8ef7",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

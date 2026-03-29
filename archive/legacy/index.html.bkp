@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JobTrack — Suivi de Candidatures</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SIDEBAR / NAV
+═══════════════════════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">◈</span>
+    <span class="logo-text">JobTrack</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="nav-item active" data-view="dashboard" aria-label="Tableau de bord">
+      <span class="nav-icon">⬡</span>
+      <span class="nav-label">Dashboard</span>
+    </button>
+    <button class="nav-item" data-view="list" aria-label="Candidatures">
+      <span class="nav-icon">⊞</span>
+      <span class="nav-label">Candidatures</span>
+    </button>
+    <button class="nav-item" data-view="relances" aria-label="Relances">
+      <span class="nav-icon">◷</span>
+      <span class="nav-label">Relances</span>
+      <span class="nav-badge" id="relance-badge">0</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <button class="nav-item" id="btn-theme-toggle" aria-label="Changer le thème">
+      <span class="nav-icon" id="theme-icon">◑</span>
+      <span class="nav-label">Thème</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Mobile header -->
+<header class="mobile-header">
+  <button class="burger" id="burger" aria-label="Menu">☰</button>
+  <span class="mobile-title">JobTrack</span>
+  <button class="btn btn-sm btn-primary" id="btn-add-mobile">+ Ajouter</button>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- ── VIEW : DASHBOARD ── -->
+  <section class="view active" id="view-dashboard">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-sub" id="greeting-date"></p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="btn-download-template" title="Télécharger le modèle CSV">
+          <span>⬇</span> Modèle CSV
+        </button>
+        <button class="btn btn-secondary" id="btn-open-import">
+          <span>⬆</span> Importer CSV
+        </button>
+        <button class="btn btn-primary" id="btn-add-desktop">
+          <span>+</span> Ajouter
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <!-- PIPELINE VISUEL -->
+    <div class="pipeline-section">
+      <h2 class="section-title">Pipeline</h2>
+      <div class="pipeline" id="pipeline"></div>
+    </div>
+
+    <!-- ACTIVITÉ RÉCENTE -->
+    <div class="recent-section">
+      <div class="section-header-row">
+        <h2 class="section-title">Récentes</h2>
+        <button class="link-btn" data-view="list">Tout voir →</button>
+      </div>
+      <div class="recent-list" id="recent-list"></div>
+    </div>
+
+  </section>
+
+  <!-- ── VIEW : LISTE CANDIDATURES ── -->
+  <section class="view" id="view-list">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Candidatures</h1>
+        <p class="page-sub"><span id="list-count">0</span> candidature(s)</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="btn-download-template-2" title="Télécharger le modèle CSV">
+          <span>⬇</span> Modèle CSV
+        </button>
+        <button class="btn btn-secondary" id="btn-open-import-2">
+          <span>⬆</span> Importer CSV
+        </button>
+        <button class="btn btn-primary" id="btn-add-list">
+          <span>+</span> Ajouter
+        </button>
+      </div>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input
+          type="search"
+          id="search-input"
+          placeholder="Rechercher entreprise, poste…"
+          autocomplete="off"
+          aria-label="Recherche"
+        />
+      </div>
+
+      <select id="filter-status" aria-label="Filtrer par statut">
+        <option value="">Tous les statuts</option>
+        <option>à envoyer</option>
+        <option>envoyée</option>
+        <option>relance à faire</option>
+        <option>entretien RH</option>
+        <option>entretien technique</option>
+        <option>test technique</option>
+        <option>en attente</option>
+        <option>refusée</option>
+        <option>offre reçue</option>
+        <option>acceptée</option>
+      </select>
+
+      <select id="filter-contract" aria-label="Filtrer par contrat">
+        <option value="">Tous contrats</option>
+        <option>CDI</option>
+        <option>CDD</option>
+        <option>freelance</option>
+        <option>alternance</option>
+        <option>stage</option>
+        <option>autre</option>
+      </select>
+
+      <select id="filter-priority" aria-label="Filtrer par priorité">
+        <option value="">Toutes priorités</option>
+        <option>haute</option>
+        <option>moyenne</option>
+        <option>basse</option>
+      </select>
+
+      <select id="sort-by" aria-label="Trier par">
+        <option value="date_desc">Date ↓</option>
+        <option value="date_asc">Date ↑</option>
+        <option value="company">Entreprise</option>
+        <option value="priority">Priorité</option>
+      </select>
+
+      <button class="btn btn-ghost btn-sm" id="btn-reset-filters" title="Réinitialiser filtres">✕</button>
+    </div>
+
+    <!-- CARDS GRID -->
+    <div class="cards-grid" id="cards-grid"></div>
+
+  </section>
+
+  <!-- ── VIEW : RELANCES ── -->
+  <section class="view" id="view-relances">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Relances</h1>
+        <p class="page-sub">Candidatures à relancer</p>
+      </div>
+    </div>
+    <div class="cards-grid" id="relances-grid"></div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL : AJOUT / ÉDITION CANDIDATURE
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-form" role="dialog" aria-modal="true" aria-labelledby="modal-form-title">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-form-title">Nouvelle candidature</h2>
+      <button class="modal-close" id="modal-form-close" aria-label="Fermer">✕</button>
+    </div>
+
+    <div class="form-grid">
+
+      <!-- Col 1 -->
+      <div class="form-col">
+        <div class="field">
+          <label for="f-company">Entreprise *</label>
+          <input id="f-company" type="text" placeholder="Acme Corp" required />
+        </div>
+        <div class="field">
+          <label for="f-job-title">Poste *</label>
+          <input id="f-job-title" type="text" placeholder="Développeur Front-End" required />
+        </div>
+        <div class="field field-row">
+          <div class="field">
+            <label for="f-contract">Contrat</label>
+            <select id="f-contract">
+              <option value="">—</option>
+              <option>CDI</option><option>CDD</option>
+              <option>freelance</option><option>alternance</option>
+              <option>stage</option><option>autre</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-priority">Priorité</label>
+            <select id="f-priority">
+              <option value="moyenne">Moyenne</option>
+              <option value="haute">Haute</option>
+              <option value="basse">Basse</option>
+            </select>
+          </div>
+        </div>
+        <div class="field field-row">
+          <div class="field">
+            <label for="f-location">Localisation</label>
+            <input id="f-location" type="text" placeholder="Paris" />
+          </div>
+          <div class="field">
+            <label for="f-work-mode">Mode</label>
+            <select id="f-work-mode">
+              <option value="">—</option>
+              <option value="présentiel">Présentiel</option>
+              <option value="hybride">Hybride</option>
+              <option value="remote">Remote</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 2 -->
+      <div class="form-col">
+        <div class="field">
+          <label for="f-status">Statut</label>
+          <select id="f-status">
+            <option value="à envoyer">À envoyer</option>
+            <option value="envoyée">Envoyée</option>
+            <option value="relance à faire">Relance à faire</option>
+            <option value="entretien RH">Entretien RH</option>
+            <option value="entretien technique">Entretien technique</option>
+            <option value="test technique">Test technique</option>
+            <option value="en attente">En attente</option>
+            <option value="refusée">Refusée</option>
+            <option value="offre reçue">Offre reçue</option>
+            <option value="acceptée">Acceptée</option>
+          </select>
+        </div>
+        <div class="field field-row">
+          <div class="field">
+            <label for="f-date-found">Trouvée le</label>
+            <input id="f-date-found" type="date" />
+          </div>
+          <div class="field">
+            <label for="f-date-applied">Postulée le</label>
+            <input id="f-date-applied" type="date" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-source">Source</label>
+          <select id="f-source">
+            <option value="">—</option>
+            <option>LinkedIn</option>
+            <option>Indeed</option>
+            <option>Welcome to the Jungle</option>
+            <option>site carrière</option>
+            <option>candidature spontanée</option>
+            <option>autre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-salary">Salaire / TJM</label>
+          <input id="f-salary" type="text" placeholder="45k–55k ou 500 €/j" />
+        </div>
+        <div class="field">
+          <label for="f-job-url">URL de l'offre</label>
+          <input id="f-job-url" type="url" placeholder="https://…" />
+        </div>
+      </div>
+
+      <!-- Notes (full width) -->
+      <div class="field field-full">
+        <label for="f-notes">Notes</label>
+        <textarea id="f-notes" rows="3" placeholder="Stack, recruteur, points d'attention…"></textarea>
+      </div>
+
+      <div class="field field-row field-full">
+        <div class="field">
+          <label for="f-contact-name">Contact</label>
+          <input id="f-contact-name" type="text" placeholder="Sophie Martin" />
+        </div>
+        <div class="field">
+          <label for="f-contact-email">Email contact</label>
+          <input id="f-contact-email" type="email" placeholder="s.martin@acme.com" />
+        </div>
+        <div class="field">
+          <label for="f-followup">Relance le</label>
+          <input id="f-followup" type="date" />
+        </div>
+      </div>
+
+    </div><!-- /form-grid -->
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-form-cancel">Annuler</button>
+      <button class="btn btn-primary" id="btn-form-save">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL : DÉTAIL CANDIDATURE
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="detail-title">—</h2>
+        <p class="modal-sub" id="detail-job">—</p>
+      </div>
+      <button class="modal-close" id="modal-detail-close" aria-label="Fermer">✕</button>
+    </div>
+    <div id="detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-danger" id="detail-btn-delete">Supprimer</button>
+      <button class="btn btn-secondary" id="detail-btn-edit">Modifier</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL : IMPORT CSV
+═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-import" role="dialog" aria-modal="true" aria-labelledby="import-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="import-title">⬆ Import CSV</h2>
+      <button class="modal-close" id="modal-import-close" aria-label="Fermer">✕</button>
+    </div>
+
+    <div class="drop-zone" id="drop-zone">
+      <span class="dz-icon">📂</span>
+      <p>Glissez votre fichier ici ou <strong>cliquez pour parcourir</strong></p>
+      <p class="dz-sub">Fichiers .csv uniquement · UTF-8 recommandé</p>
+    </div>
+    <input type="file" id="file-input" accept=".csv,text/csv" aria-label="Sélectionner un fichier CSV" />
+
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+    </div>
+
+    <div class="import-summary" id="import-summary">
+      <div class="summary-stats">
+        <div class="stat-box all">
+          <span class="val" id="s-total">0</span>
+          <span class="lbl">Lues</span>
+        </div>
+        <div class="stat-box ok">
+          <span class="val" id="s-imported">0</span>
+          <span class="lbl">Valides ✓</span>
+        </div>
+        <div class="stat-box bad">
+          <span class="val" id="s-rejected">0</span>
+          <span class="lbl">Rejetées ✗</span>
+        </div>
+      </div>
+      <div class="errors-list" id="errors-list">
+        <details>
+          <summary>▶ Afficher les erreurs</summary>
+          <div id="errors-container"></div>
+        </details>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-import-cancel">Annuler</button>
+      <button class="btn btn-primary" id="btn-import-confirm" disabled>Confirmer l'import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

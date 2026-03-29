@@ -1,0 +1,6 @@
+{
+  "name": "@jobtrack/web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UI statique servie par @jobtrack/api (même origine en dev)"
+}
