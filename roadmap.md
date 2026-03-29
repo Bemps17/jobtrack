@@ -1,6 +1,16 @@
 # Roadmap JobTrack
 
-Suivi de candidatures — **monorepo** : frontend statique + API Node (Express). Ce document regroupe des **axes d’amélioration** et une **planification indicative** (priorités et jalons), pas des engagements de date.
+Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intégrées). Ce document décrit l’**état du produit (v0.1.0)**, des **axes d’amélioration** et une **planification indicative** (sans engagement de date).
+
+---
+
+## Dépôt et version
+
+| Élément | Détail |
+|---------|--------|
+| **Version produit** | **0.1.0** (`apps/web/package.json`, `src/lib/version.ts`) |
+| **Dépôt** | [github.com/Bemps17/jobtrack](https://github.com/Bemps17/jobtrack) |
+| **Description** | Application pour suivre les candidatures, offres et avancement dans le recrutement |
 
 ---
 
@@ -8,20 +18,35 @@ Suivi de candidatures — **monorepo** : frontend statique + API Node (Express).
 
 | Dossier | Rôle |
 |---------|------|
-| `apps/web/` | **Next.js 15** (App Router, React 19, TypeScript, Tailwind 4). UI + `app/api/*` (même serveur). |
-| `apps/web/public/` | `manifest.webmanifest`, `icons/`, **`sw.js`** généré au build (PWA ; désactivé en `next dev`). |
-| `apps/web/data/` | `candidatures.json` (gitignored) — persistance locale des candidatures. |
-| `archive/legacy-express-api/` | Ancienne API Express (référence uniquement). |
+| `apps/web/` | **Next.js 15** (App Router, React 19, TypeScript, Tailwind 4). UI + **Route Handlers** `app/api/*`. |
+| `apps/web/public/` | `manifest.webmanifest`, `icons/` ; **`sw.js`** généré au build (**PWA** ; désactivé en `next dev`). |
+| `apps/web/data/` | `candidatures.json` (gitignored) — persistance locale si les variables Supabase serveur ne sont pas définies. |
+| `apps/web/.env.example` | Variables `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (et optionnellement clé anon) — voir fichier. |
+| `archive/legacy-express-api/` | Ancienne API Express (référence). |
 | `archive/legacy-static-web/` | Ancienne SPA HTML/JS. |
+| `.cursor/rules/` | Règles Cursor projet (version 0.1.0, conventions). |
 
-**Démarrage** : racine — `npm install`, puis `npm run dev` → [http://localhost:3000](http://localhost:3000). **Prod / PWA** : `npm run build` puis `npm run start` — le service worker est actif hors mode développement.
+**Démarrage** : à la racine — `npm install`, `npm run dev` → [http://localhost:3000](http://localhost:3000) (autre port si 3000 occupé). **Production / PWA** : `npm run build` puis `npm run start` — service worker actif hors développement.
 
 ---
 
-## État actuel (référence)
+## Livré en v0.1.0 (récapitulatif)
 
-- **Forces** : interface cohérente (thème, responsive), pipeline et KPIs, import CSV avec gestion des doublons, modèle CSV exportable, **persistance fichier via API** quand l’app est servie par Express.
-- **Limites** : un seul fichier JSON (pas de conflits multi-utilisateurs), import sensible à la casse des colonnes CSV, pas de tests automatisés sur l’API, pas d’auth.
+- Application **React** (pages `/`, `/list`, `/relances`), layout responsive, thème clair/sombre.
+- **KPIs**, pipeline, liste récente, filtres / tri, vue **Relances**, CRUD + modales (détail, formulaire, import CSV, doublons).
+- **API** : `GET` / `PUT` `/api/candidatures`, `GET` `/api/health` (inclut la version).
+- **Persistance** : fichier JSON côté serveur Next par défaut ; **Supabase** (`public.candidatures`) lorsque `NEXT_PUBLIC_SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont définis (accès via **service role** dans les Route Handlers uniquement, MVP).
+- **PWA** : manifest + workbox via `@ducanh2912/next-pwa`.
+- Code métier structuré en **`src/lib/*`**, **`src/context/*`**, **`src/components/*`** (plus de monolithe `app.js` côté prod).
+
+---
+
+## État actuel (limites connues)
+
+- **Données** : JSON local ou table Supabase selon l’environnement — pas de multi-utilisateurs ni résolution de conflits (RLS activée côté projet sans policies tant que tout passe par la service role).
+- **CSV** : en-têtes sensibles à la casse / nom exact des colonnes (`company`, `job_title`, …).
+- **Qualité** : pas de suite de tests automatisés ; peu de couverture accessibilité (focus modales, Escape global, etc.).
+- **Sécurité** : pas d’authentification — usage personnel / réseau de confiance recommandé si exposé.
 
 ---
 
@@ -31,36 +56,37 @@ Suivi de candidatures — **monorepo** : frontend statique + API Node (Express).
 
 | Idée | Intérêt |
 |------|---------|
-| **Persistance locale** (`localStorage` / offline) en complément du backend | Filet de sécurité si serveur coupé ; sync éventuelle plus tard. |
-| **Sauvegarde / restauration** (export JSON + import) | Copie de secours, migration, debug utilisateur. |
-| **Normalisation des en-têtes CSV** | Accepter `Company`, `COMPANY`, espaces — aligné sur `validateHeaders` / `mapRow`. |
-| **Horodatage `_updatedAt`** systématique | Meilleur tri et audit des modifications. |
+| **Export / import JSON** (même schéma que l’API) | Sauvegarde manuelle, migration, restauration. |
+| **Version de schéma** dans le JSON stocké + migration légère | Évolutions de champs sans casser les anciens fichiers. |
+| **Normalisation des en-têtes CSV** | Accepter `Company`, alias, trim — moins d’échecs d’import. |
+| **`_updatedAt`** systématique sur les enregistrements modifiés | Tri et audit. |
+| **Filet offline** (`localStorage` / cache) en complément | Tolérance aux coupures réseau ; sync ultérieure optionnelle. |
 
 ### Expérience utilisateur
 
 | Idée | Intérêt |
 |------|---------|
-| **Rappels / relances** : surlignage ou section « à traiter aujourd’hui » (`follow_up_date`) | Colle au métier « job search » sans agenda externe obligatoire. |
-| **Recherche élargie** (notes, source, email) | Moins de frustration que recherche entreprise + poste seuls. |
-| **Vue Kanban** par statut (optionnelle) | Lecture rapide du pipeline pour certains profils. |
-| **Accessibilité** : focus piégé dans les modales, annonces `aria-live` pour toasts import | Conformité et confort clavier / lecteur d’écran. |
+| **Relances calendaires** : « à traiter aujourd’hui / cette semaine » (`follow_up_date`) | Complète la vue Relances déjà existante. |
+| **Recherche élargie** (notes, source, email) | Au-delà entreprise + intitulé de poste. |
+| **Vue Kanban** par statut | Lecture pipeline alternative. |
+| **Accessibilité** : focus piégé, `aria-live` toasts, fermeture Escape / overlay | WCAG, clavier, lecteurs d’écran. |
 
 ### Technique et maintenance
 
 | Idée | Intérêt |
 |------|---------|
-| **Découper `app.js`** en modules (ES modules ou fichiers `src/*.js` + bundler léger) | Lisibilité et évolution sans fichier unique de 1200+ lignes. |
-| **Typage JSDoc ou TypeScript** sur le modèle « candidature » | Moins d’erreurs sur les champs CSV / formulaire. |
-| **Tests** : smoke tests sur `norm`, `mapRow`, `isDuplicate`, `mergeCandidatures` | Sécuriser les régressions import / doublons. |
-| **PWA** (manifest + service worker minimal) | Installation sur mobile, cache des assets statiques. |
+| **Tests unitaires** (`vitest` / `node:test`) sur `norm`, `mapRow`, `isDuplicate`, `mergeCandidatures`, routes API | Régressions import / doublons. |
+| **CI** (GitHub Actions) : `lint`, `build` sur chaque push | Qualité sur le dépôt public. |
+| **Postgres (Supabase)** | Branché en option (sync liste complète `GET`/`PUT` `/api/candidatures`). Multi-user + RLS par `user_id` reste à faire si besoin. |
+| **Déploiement** documenté (Vercel, Docker, VPS) | Reproductibilité hors machine locale. |
 
 ### Évolution produit (optionnel, plus tard)
 
 | Idée | Intérêt |
 |------|---------|
-| **Backend optionnel** (sync compte, partage) | Multi-appareil ; complexité et coûts d’hébergement. |
-| **Extension navigateur** « ajouter l’offre depuis l’onglet » | Gain de temps ; maintenance des parseurs par site. |
-| **Statistiques** (délais moyens par étape, taux de conversion) | Visualisation de l’efficacité de recherche. |
+| Compte / **sync cloud** | Multi-appareil. |
+| **Extension navigateur** « ajouter l’offre depuis l’onglet » | Gain de temps. |
+| **Statistiques** (délais par étape, conversion) | Pilotage de la recherche. |
 
 ---
 
@@ -68,54 +94,53 @@ Suivi de candidatures — **monorepo** : frontend statique + API Node (Express).
 
 ### Phase 1 — Stabilité et confiance *(court terme)*
 
-1. ~~Persistance côté serveur (fichier JSON) + chargement au démarrage~~ — **en place** (`PUT` liste complète).
-2. Export / import JSON (même schéma que les objets en mémoire), endpoints ou téléchargement navigateur.
-3. Cartographier et corriger les cas limites CSV (en-têtes, lignes vides, encodage).
-4. Retirer ou centraliser les `console.*` résiduels ; messages d’erreur utilisateur homogènes.
+1. ~~Persistance serveur + chargement au démarrage~~ — **fait** (Next + `candidatures.json`).
+2. **Export / import JSON** (UI + téléchargement ou endpoint dédié).
+3. **Robustesse CSV** : en-têtes normalisés, messages d’erreur homogènes, encodage.
+4. **CI** GitHub Actions : au minimum `npm run build` sur `main`.
 
-**Indicateur de succès** : recharger la page ne fait plus perdre les données ; un export JSON est rejouable sans corruption.
+**Indicateur de succès** : sauvegarde JSON rejouable ; build vert sur le dépôt distant.
 
 ### Phase 2 — Usage quotidien *(moyen terme)*
 
-1. Tableau ou encart « relances du jour / cette semaine » basé sur `follow_up_date`.
-2. Recherche sur notes + champs secondaires.
-3. Amélioration accessibilité modales et formulaires.
-4. Documentation utilisateur courte (`README` ou aide in-app) : import CSV, doublons, sauvegarde.
+1. Encart ou filtre **relances par date** (`follow_up_date`).
+2. **Recherche étendue** aux notes et métadonnées.
+3. **Accessibilité** modales et navigation clavier.
+4. Aide in-app courte ou section README avancée (import, doublons, déploiement).
 
-**Indicateur de succès** : un parcours « import → filtrer → relance → export sauvegarde » est documenté et utilisable au clavier.
+**Indicateur de succès** : parcours import → filtre → relance → export documenté et utilisable au clavier.
 
 ### Phase 3 — Qualité et extensibilité *(moyen / long terme)*
 
-1. Refactor modulaire de `js/app.js` (+ convention de nommage des événements / vues).
-2. Suite de tests unitaires minimale (Node ou navigateur).
-3. PWA légère si l’usage mobile est confirmé.
-4. Évaluation TypeScript ou JSDoc strict selon l’appétit pour l’outillage.
+1. ~~Refactor modulaire + TypeScript~~ — **amorcé** (base actuelle) ; poursuivre découpage et réduction du « god context » si besoin.
+2. ~~**PWA**~~ — **fait** (build prod) ; affiner icônes PNG multi-tailles si nécessaire stores / install.
+3. Couverture **tests** ciblés + **lint** strict sur les PR.
+4. **Base SQL** ou API externe si montée en charge ou besoin multi-utilisateurs.
 
-**Indicateur de succès** : modification d’une règle métier (ex. doublon) avec test de non-régression.
+**Indicateur de succès** : changement de règle métier (ex. doublon) couvert par au moins un test.
 
-### Phase 4 — Vision *(long terme, discrétionnaire)*
+### Phase 4 — Vision *(long terme)*
 
-- Sync cloud / compte utilisateur.
-- Kanban ou vues analytiques avancées.
-- Intégrations (calendrier, ATS externes).
+- Auth, sync, Kanban avancé, intégrations calendrier / ATS.
 
 ---
 
 ## Principes directeurs
 
-- **Backend intégré** dans le monorepo (Express) ; évolution possible vers SQLite/Postgres sans changer le contrat API minimal.
-- **Petites livraisons** : chaque phase doit livrer quelque chose d’utilisable sans tout refactor d’un coup.
-- **Compatibilité des données** : toute évolution de schéma prévoit une migration ou un numéro de version dans le JSON stocké.
+- **Une app Next** : API et front sur le même déploiement ; éviter de réintroduire un serveur Express parallèle sauf besoin spécifique.
+- **Petites livraisons** : livrer des incréments utilisables ; incrémenter **semver** (0.2.0, …) quand le comportement public change.
+- **Compatibilité des données** : migration ou champ `schemaVersion` dans le JSON lors des évolutions de modèle.
 
 ---
 
 ## Historique du document
 
-| Version | Date | Notes |
-|---------|------|--------|
-| 1.0 | 2026-03-29 | Première roadmap après restructuration `js/`, `assets/css/`, correctifs modale doublons. |
-| 1.1 | 2026-03-29 | Monorepo `apps/web` + `apps/api`, persistance `candidatures.json`, `roadmap` mise à jour. |
+| Version doc | Date | Notes |
+|-------------|------|--------|
+| 1.0 | 2026-03-29 | Première roadmap (SPA, restructuration fichiers). |
+| 1.1 | 2026-03-29 | Monorepo, persistance, Express puis Next. |
+| **1.2** | **2026-03-29** | Alignement **Next.js + PWA**, **v0.1.0**, dépôt **GitHub**, livrables barrés / phases réalistes, limites actuelles. |
 
 ---
 
-*Pour ajuster les priorités, choisir une phase cible et découper les tickets correspondants dans votre outil de suivi habituel.*
+*Pour prioriser : choisir une phase, créer des tickets (GitHub Issues ou outil interne) et lier les PR à ces tickets.*
