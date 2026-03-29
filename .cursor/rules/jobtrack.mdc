@@ -1,5 +1,5 @@
 ---
-description: Conventions JobTrack monorepo — version 0.1.0, Next.js, React, PWA
+description: Conventions JobTrack monorepo — version 0.2.0, Next.js, React, PWA
 alwaysApply: true
 ---
 
@@ -7,15 +7,14 @@ alwaysApply: true
 
 ## Versioning (obligatoire en ce cycle)
 
-- Version courante **0.1.0** : figée dans `apps/web/package.json` (`version`) et `src/lib/version.ts` (`APP_VERSION`).
+- Version courante **0.2.0** : figée dans `apps/web/package.json` (`version`), `src/lib/version.ts` (`APP_VERSION`) et racine `package.json`.
 - Toute évolution publique (changelog, release) incrémente semver ; ne pas publier de version ambiguë sans bump documenté.
-- Les agent et commits doivent rester alignés avec **0.1.0** jusqu’à décision explicite de passage (ex. 0.2.0).
 
 ## Stack
 
 - **Frontend** : Next.js 15 (App Router), React 19, TypeScript, Tailwind v4.
 - **PWA** : `@ducanh2912/next-pwa`, manifest dans `public/`, pas de désactivation arbitraire du SW en prod.
-- **API** : Route Handlers Next (`src/app/api/**`), persistance `apps/web/data/candidatures.json`.
+- **API** : Route Handlers Next (`src/app/api/**`) ; persistance **JSON local** et/ou **Supabase** (`user_id` Clerk) ; auth **Clerk** sur les routes protégées.
 - **Langue** : UI et copy en **français** ; code et identifiants en anglais si idiomatique.
 
 ## Pratiques
@@ -29,3 +28,8 @@ alwaysApply: true
 
 - Racine : `npm run dev` lance **Next** (`apps/web`, port **3000** par défaut ; si occupé, Next choisit **3001**). L’ancienne app Express est archivée sous `archive/legacy-express-api/`.
 - Ne pas réintroduire `apps/web/index.html` statique comme source principale.
+
+## Auth & Supabase (Clerk + RLS)
+
+- Référence détaillée : **`prompts/cursor-clerk-jwt-supabase-rls.md`** (état BDD, `.env`, chemins réels `src/server/*`, mode `SUPABASE_USE_CLERK_JWT`).
+- Ne pas recréer `libs/supabase-client.ts` ou `app/` sans `src/` : le code vit sous **`apps/web/src/`**.

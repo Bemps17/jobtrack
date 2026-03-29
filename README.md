@@ -2,13 +2,13 @@
 
 Application pour suivre mes candidatures, offres d’emploi et mon avancement dans le processus de recrutement.
 
-**Version** : 0.1.0
+**Version** : 0.2.0
 
 ## Stack
 
 - **Next.js 15** (App Router), React 19, TypeScript, Tailwind CSS 4
 - **PWA** (manifest + service worker en production)
-- Persistance des candidatures : fichier `apps/web/data/candidatures.json` (via API Route Handlers)
+- **Clerk** (authentification) ; persistance **Supabase** (optionnel, `user_id`) ou fichier `apps/web/data/candidatures.json` (via API Route Handlers)
 
 ## Prérequis
 

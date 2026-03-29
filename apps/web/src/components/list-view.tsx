@@ -142,11 +142,17 @@ export function ListView() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-1 mb-2">
-                {[c.contract_type, c.location, c.work_mode]
-                  .filter(Boolean)
-                  .map((v) => (
+                {(
+                  [
+                    ["contract", c.contract_type],
+                    ["location", c.location],
+                    ["work_mode", c.work_mode],
+                  ] as const
+                )
+                  .filter(([, v]) => Boolean(String(v ?? "").trim()))
+                  .map(([field, v]) => (
                     <span
-                      key={v}
+                      key={`${c.id}-${field}`}
                       className="text-[10px] px-2 py-0.5 rounded bg-[var(--surface2)] border border-[var(--border)]"
                     >
                       {v}

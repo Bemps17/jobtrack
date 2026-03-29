@@ -1,8 +1,10 @@
 import type { Candidature } from "@/lib/types";
-import { createSupabaseAdmin } from "@/server/supabase-admin";
+import { createSupabaseCandidaturesClient } from "@/server/supabase-candidatures-client";
+import { useClerkJwtForSupabase } from "@/server/supabase-clerk";
 
 type DbRow = {
   id: string;
+  user_id: string | null;
   company: string;
   job_title: string;
   contract_type: string | null;
@@ -57,14 +59,29 @@ function rowToCandidature(r: DbRow): Candidature {
   };
 }
 
-function emptyToNull(s: string): string | null {
-  return s.trim() === "" ? null : s;
+/** Valeurs acceptées par PostgreSQL DATE ; sinon null (évite erreurs d’upsert). */
+function toPgDate(s: string): string | null {
+  const t = s.trim();
+  if (!t) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const d = new Date(t);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
 }
 
-function candidatureToRow(c: Candidature): DbRow {
+function safeTimestamptz(iso: string, fallback: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toISOString();
+}
+
+function candidatureToRow(c: Candidature, clerkUserId: string): DbRow {
   const now = new Date().toISOString();
+  const created = safeTimestamptz(c._createdAt || now, now);
+  const updated = safeTimestamptz(c._updatedAt || c._createdAt || now, created);
   return {
     id: c.id,
+    user_id: clerkUserId,
     company: c.company,
     job_title: c.job_title,
     contract_type: c.contract_type || null,
@@ -72,17 +89,17 @@ function candidatureToRow(c: Candidature): DbRow {
     work_mode: c.work_mode || null,
     source: c.source || null,
     job_url: c.job_url || null,
-    date_found: emptyToNull(c.date_found),
-    date_applied: emptyToNull(c.date_applied),
+    date_found: toPgDate(c.date_found),
+    date_applied: toPgDate(c.date_applied),
     status: c.status || null,
     priority: c.priority || null,
     salary: c.salary || null,
     contact_name: c.contact_name || null,
     contact_email: c.contact_email || null,
-    follow_up_date: emptyToNull(c.follow_up_date),
+    follow_up_date: toPgDate(c.follow_up_date),
     notes: c.notes || null,
-    created_at: c._createdAt || now,
-    updated_at: c._updatedAt || c._createdAt || now,
+    created_at: created,
+    updated_at: updated,
   };
 }
 
@@ -115,35 +132,57 @@ function normalizeIncoming(c: unknown): Candidature {
   };
 }
 
-export async function readCandidaturesFromSupabase(): Promise<Candidature[]> {
-  const supabase = createSupabaseAdmin();
-  const { data, error } = await supabase
+export async function readCandidaturesFromSupabase(
+  clerkUserId: string
+): Promise<Candidature[]> {
+  const supabase = await createSupabaseCandidaturesClient();
+  let q = supabase
     .from("candidatures")
     .select("*")
     .order("created_at", { ascending: true });
+  if (!useClerkJwtForSupabase()) {
+    q = q.eq("user_id", clerkUserId);
+  }
+  const { data, error } = await q;
   if (error) throw error;
   return ((data ?? []) as DbRow[]).map(rowToCandidature);
 }
 
 export async function writeCandidaturesToSupabase(
-  list: unknown[]
+  list: unknown[],
+  clerkUserId: string
 ): Promise<void> {
-  const supabase = createSupabaseAdmin();
-  const rows = list.map((item) => candidatureToRow(normalizeIncoming(item)));
+  const supabase = await createSupabaseCandidaturesClient();
+  const rows = list.map((item) =>
+    candidatureToRow(normalizeIncoming(item), clerkUserId)
+  );
+  for (const r of rows) {
+    if (!r.id.trim()) {
+      throw new Error("Une candidature a un id vide (sauvegarde annulée).");
+    }
+    if (!r.company.trim() || !r.job_title.trim()) {
+      throw new Error(
+        `Candidature « ${r.id} » : company et job_title sont obligatoires en base.`
+      );
+    }
+  }
 
   if (rows.length === 0) {
-    const { data: existing, error: selErr } = await supabase
-      .from("candidatures")
-      .select("id");
+    let sel = supabase.from("candidatures").select("id");
+    if (!useClerkJwtForSupabase()) {
+      sel = sel.eq("user_id", clerkUserId);
+    }
+    const { data: existing, error: selErr } = await sel;
     if (selErr) throw selErr;
     const ids = (existing ?? []).map((r) => String((r as { id: string }).id));
     if (ids.length > 0) {
       for (let i = 0; i < ids.length; i += CHUNK) {
         const chunk = ids.slice(i, i + CHUNK);
-        const { error: delErr } = await supabase
-          .from("candidatures")
-          .delete()
-          .in("id", chunk);
+        let del = supabase.from("candidatures").delete().in("id", chunk);
+        if (!useClerkJwtForSupabase()) {
+          del = del.eq("user_id", clerkUserId);
+        }
+        const { error: delErr } = await del;
         if (delErr) throw delErr;
       }
     }
@@ -159,9 +198,11 @@ export async function writeCandidaturesToSupabase(
   }
 
   const wanted = new Set(rows.map((r) => r.id));
-  const { data: existing, error: selErr } = await supabase
-    .from("candidatures")
-    .select("id");
+  let sel2 = supabase.from("candidatures").select("id");
+  if (!useClerkJwtForSupabase()) {
+    sel2 = sel2.eq("user_id", clerkUserId);
+  }
+  const { data: existing, error: selErr } = await sel2;
   if (selErr) throw selErr;
   const toDelete = (existing ?? [])
     .map((r) => String((r as { id: string }).id))
@@ -169,10 +210,11 @@ export async function writeCandidaturesToSupabase(
   for (let i = 0; i < toDelete.length; i += CHUNK) {
     const chunk = toDelete.slice(i, i + CHUNK);
     if (chunk.length === 0) continue;
-    const { error: delErr } = await supabase
-      .from("candidatures")
-      .delete()
-      .in("id", chunk);
+    let del2 = supabase.from("candidatures").delete().in("id", chunk);
+    if (!useClerkJwtForSupabase()) {
+      del2 = del2.eq("user_id", clerkUserId);
+    }
+    const { error: delErr } = await del2;
     if (delErr) throw delErr;
   }
 }

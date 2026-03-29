@@ -1,6 +1,6 @@
 # Roadmap JobTrack
 
-Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intégrées). Ce document décrit l’**état du produit (v0.1.0)**, des **axes d’amélioration** et une **planification indicative** (sans engagement de date).
+Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intégrées). Ce document décrit l’**état du produit (v0.2.0)**, des **axes d’amélioration** et une **planification indicative** (sans engagement de date).
 
 ---
 
@@ -8,23 +8,25 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 
 | Élément | Détail |
 |---------|--------|
-| **Version produit** | **0.1.0** (`apps/web/package.json`, `src/lib/version.ts`) |
+| **Version produit** | **0.2.0** (`apps/web/package.json`, `src/lib/version.ts`, racine `package.json`) |
 | **Dépôt** | [github.com/Bemps17/jobtrack](https://github.com/Bemps17/jobtrack) |
 | **Description** | Application pour suivre les candidatures, offres et avancement dans le recrutement |
 
 ---
 
-## Structure monorepo (v0.1.0)
+## Structure monorepo (v0.2.0)
 
 | Dossier | Rôle |
 |---------|------|
 | `apps/web/` | **Next.js 15** (App Router, React 19, TypeScript, Tailwind 4). UI + **Route Handlers** `app/api/*`. |
+| `apps/web/src/middleware.ts` | **Clerk** : routes protégées sauf `/sign-in`, `/sign-up`, `/api/health`. |
 | `apps/web/public/` | `manifest.webmanifest`, `icons/` ; **`sw.js`** généré au build (**PWA** ; désactivé en `next dev`). |
-| `apps/web/data/` | `candidatures.json` (gitignored) — persistance locale si les variables Supabase serveur ne sont pas définies. |
-| `apps/web/.env.example` | Variables `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (et optionnellement clé anon) — voir fichier. |
+| `apps/web/data/` | `candidatures.json` (gitignored) — persistance locale si Supabase n’est pas configuré pour l’environnement. |
+| `apps/web/.env.example` | Clerk, Supabase (URL, anon, service role), `SUPABASE_USE_CLERK_JWT`, `CLERK_SUPABASE_JWT_TEMPLATE` (optionnel). |
+| `prompts/` | Prompts agents (**Comet** : Supabase, Clerk, migration RLS) + référence Cursor **Clerk JWT / RLS**. |
 | `archive/legacy-express-api/` | Ancienne API Express (référence). |
 | `archive/legacy-static-web/` | Ancienne SPA HTML/JS. |
-| `.cursor/rules/` | Règles Cursor projet (version 0.1.0, conventions). |
+| `.cursor/rules/` | Règles Cursor projet (version **0.2.0**, conventions). |
 
 **Démarrage** : à la racine — `npm install`, `npm run dev` → [http://localhost:3000](http://localhost:3000) (autre port si 3000 occupé). **Production / PWA** : `npm run build` puis `npm run start` — service worker actif hors développement.
 
@@ -35,18 +37,25 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 - Application **React** (pages `/`, `/list`, `/relances`), layout responsive, thème clair/sombre.
 - **KPIs**, pipeline, liste récente, filtres / tri, vue **Relances**, CRUD + modales (détail, formulaire, import CSV, doublons).
 - **API** : `GET` / `PUT` `/api/candidatures`, `GET` `/api/health` (inclut la version).
-- **Persistance** : fichier JSON côté serveur Next par défaut ; **Supabase** (`public.candidatures`) lorsque `NEXT_PUBLIC_SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont définis (accès via **service role** dans les Route Handlers uniquement, MVP).
-- **PWA** : manifest + workbox via `@ducanh2912/next-pwa`.
-- Code métier structuré en **`src/lib/*`**, **`src/context/*`**, **`src/components/*`** (plus de monolithe `app.js` côté prod).
+- **Persistance** fichier JSON par défaut ; **Supabase** optionnelle (sync liste complète).
+- **PWA** : manifest + workbox.
+- Structure **`src/lib/*`**, **`src/context/*`**, **`src/components/*`**.
+
+## Livré en v0.2.0 *(2026-03-29)*
+
+- **Authentification Clerk** : `ClerkProvider`, `/sign-in` / `/sign-up`, middleware, `UserButton` / connexion dans la shell ; **`/api/candidatures`** réservée aux utilisateurs connectés.
+- **Supabase** : colonne **`user_id`** (id Clerk) ; écriture/lecture **scoping** par utilisateur avec **service role** ; mode optionnel **`SUPABASE_USE_CLERK_JWT=true`** (clé **anon** + JWT Clerk, **RLS** en base). Variable **`CLERK_SUPABASE_JWT_TEMPLATE`** pour un template JWT nommé si besoin.
+- **Qualité** : messages d’erreur API enrichis en dev ; dates normalisées pour Postgres ; script **`npm run test:supabase`** ; page **`not-found`** ; correctif clés React dupliquées (**liste** : pastilles contrat / lieu / mode).
+- **Documentation** : prompts **Comet** (Clerk, migration RLS), **`prompts/cursor-clerk-jwt-supabase-rls.md`**, SQL **`prompts/supabase-user-id-clerk-rls.sql`**, `.npmrc` **legacy-peer-deps** pour Clerk + React 19.
 
 ---
 
 ## État actuel (limites connues)
 
-- **Données** : JSON local ou table Supabase selon l’environnement — pas de multi-utilisateurs ni résolution de conflits (RLS activée côté projet sans policies tant que tout passe par la service role).
+- **Données** : JSON local **sans** isolation multi-utilisateur ; Supabase **avec** `user_id` + filtre ou RLS selon le mode — pas de résolution de conflits si deux sessions écrivent en parallèle.
 - **CSV** : en-têtes sensibles à la casse / nom exact des colonnes (`company`, `job_title`, …).
-- **Qualité** : pas de suite de tests automatisés ; peu de couverture accessibilité (focus modales, Escape global, etc.).
-- **Sécurité** : pas d’authentification — usage personnel / réseau de confiance recommandé si exposé.
+- **Qualité** : pas de suite de tests automatisés ; peu de couverture accessibilité ; **build prod** peut encore échouer sur le prerender de certaines pages (webpack) — à traiter.
+- **Sécurité** : exposition publique nécessite **Clerk** + secrets **Vercel** corrects ; ne jamais publier **service role** ou **CLERK_SECRET_KEY** côté client.
 
 ---
 
@@ -77,16 +86,70 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 |------|---------|
 | **Tests unitaires** (`vitest` / `node:test`) sur `norm`, `mapRow`, `isDuplicate`, `mergeCandidatures`, routes API | Régressions import / doublons. |
 | **CI** (GitHub Actions) : `lint`, `build` sur chaque push | Qualité sur le dépôt public. |
-| **Postgres (Supabase)** | Branché en option (sync liste complète `GET`/`PUT` `/api/candidatures`). Multi-user + RLS par `user_id` reste à faire si besoin. |
+| **Postgres (Supabase)** | Branché : **sync** `GET`/`PUT`, **`user_id` Clerk**, filtre service role ou **RLS + JWT** (`SUPABASE_USE_CLERK_JWT`). |
 | **Déploiement** documenté (Vercel, Docker, VPS) | Reproductibilité hors machine locale. |
 
 ### Évolution produit (optionnel, plus tard)
 
 | Idée | Intérêt |
 |------|---------|
-| Compte / **sync cloud** | Multi-appareil. |
+| Compte / **sync cloud** | **Partiel** : Clerk + Supabase par utilisateur ; affiner sauvegarde / conflits multi-appareil. |
 | **Extension navigateur** « ajouter l’offre depuis l’onglet » | Gain de temps. |
 | **Statistiques** (délais par étape, conversion) | Pilotage de la recherche. |
+
+---
+
+## Backlog UX / UI & QoL *(recommandations fusionnées)*
+
+> Synthèse d’un document produit externe intégré ici. **Vocabulaire aligné sur l’app** : statut **`envoyée`** (pas « c’est envoyé »), champ **`date_applied`** pour la date de candidature (équivalent « date postulée »).
+
+### Cartographie : doublons avec la roadmap / le produit
+
+| Sujet (doc UX) | Déjà prévu ou livré | Précision |
+|----------------|---------------------|-----------|
+| Recherche / filtres (barre, Ctrl+K, favoris) | Oui (partiel) | Filtres / tri **liste** existants ; **Recherche élargie** (notes, source, email) — tableau « Expérience utilisateur » + Phase 2. Le reste (Ctrl+K, filtres sauvegardés) est **nouveau**. |
+| Vue Kanban / pipeline | Oui | Ligne **Vue Kanban** + Phase 4 ; le **drag & drop** entre colonnes est un **plus** non détaillé avant. |
+| Thème clair / sombre | **Livré** v0.1.0 | Toggle présent ; **persistance** préférence + **thème système** = complément (doc §3.1). |
+| PWA / mobile installable | **Livré** (build prod) | Affiner **responsive** et parcours tactile = enrichissement doc §4.5. |
+| Relances / rappels (7j, 14j, badges) | Oui (proche) | **Relances calendaires** + `follow_up_date` — Phase 2 ; badges « en attente X jours » = **extension**. |
+| Export données (CSV, Excel, PDF) | Partiel | Roadmap **export / import JSON** ; **export CSV** (et Excel/PDF) = **à ajouter** explicitement (doc §2.6). |
+| Stats, graphiques, KPI avancés | Oui (partiel) | **KPIs** dashboard existants ; **analytics** (conversion, délais, sources) — évolution produit + Phase 4. |
+| Intégrations (LinkedIn, Gmail, Cal, Zapier) | Oui (vision) | Phase 4 **vision** ; pas de doublon de contenu, même horizon. |
+| Accessibilité & clavier | Oui (partiel) | **Accessibilité** modales — tableau UX ; **raccourcis globaux** (N, E, /, ↑↓) = **nouveau** (doc §2.2). |
+| Toasts / feedback sauvegarde | Partiel | **Toasts** déjà en place ; **loading states** boutons, confirmations plus visibles = quick wins doc. |
+| Notes longues | Livré | Champ **`notes`** ; **pièces jointes / historique e-mails** (doc §4.1) = **nouveau scope**. |
+| Collaboration / partage | Oui (loin) | Même famille que **sync / comptes** — Phase 4 ; doc §4.6 détaille plus. |
+
+### Fonctionnalités nettement nouvelles (peu présentes avant ce document)
+
+1. **Auto-remplissage de `date_applied`** quand le statut passe **`à envoyer`** → **`envoyée`** (date du jour ou horodatage selon choix produit) + toast explicite + rappel dans la modale. *Implémentation possible : logique dans `updateCandidature` avant `persistList`, ou trigger Postgres sur `UPDATE OF status` — aujourd’hui le `PUT` envoie la liste complète, la règle peut rester **côté client** ou **normalisation serveur**.*
+2. **Drag & drop** des cartes entre colonnes de statut (pipeline) + animation / confirmation courte.
+3. **Actions de masse** : cases à cocher, changement de statut / export / suppression groupés.
+4. **Recherche globale Ctrl+K** et **filtres favoris** (métadonnées utilisateur).
+5. **Fiches** : bordure par priorité, tags personnalisés, preview au survol, icônes d’état (relance, entretien, offre).
+6. **Formulaire** : validation URL/email en direct, brouillon auto, **dupliquer** candidature, suggestions champs récurrents.
+7. **Templates** e-mails / lettres de relance (§4.2).
+8. **Vue calendrier / timeline** des candidatures (en plus liste / Kanban).
+
+### Quick wins (recouvrement partiel avec phases 1–2)
+
+- Auto-`date_applied` lors du passage en **envoyée**  
+- Affiner **toasts** et **loading states** sur sauvegarde  
+- Bouton **Dupliquer** une candidature  
+- **Tri au clic** sur en-têtes de tableau (liste)  
+- **Sélection multiple** + compteur + actions groupées  
+- **Autocomplete** (entreprises, villes, sources déjà vues)  
+- **Couleur / bordure** selon priorité  
+- Affichage **relatif** (« il y a 3 jours ») depuis `date_applied` ou `_createdAt`  
+- **Retour en haut** sur longues listes  
+
+### Priorisation type sprints (indicative)
+
+| Niveau | Exemples d’items | Lien roadmap |
+|--------|------------------|--------------|
+| **Haute** | Auto `date_applied` ; recherche / filtres enrichis ; toasts + loading ; dupliquer | Croiser **Phase 1–2** |
+| **Moyenne** | Raccourcis clavier ; DnD pipeline ; tags ; **export CSV** ; thème persisté + système | **Phase 2–3** |
+| **Basse** | Intégrations tierces ; analytics poussés ; collaboration ; templates e-mail | **Phase 4** |
 
 ---
 
@@ -94,19 +157,21 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 
 ### Phase 1 — Stabilité et confiance *(court terme)*
 
-1. ~~Persistance serveur + chargement au démarrage~~ — **fait** (Next + `candidatures.json`).
+1. ~~Persistance serveur + chargement au démarrage~~ — **fait** (Next + `candidatures.json` / option Supabase).
 2. **Export / import JSON** (UI + téléchargement ou endpoint dédié).
 3. **Robustesse CSV** : en-têtes normalisés, messages d’erreur homogènes, encodage.
 4. **CI** GitHub Actions : au minimum `npm run build` sur `main`.
+5. *(UX — backlog ci-dessus)* **Quick wins** : loading states sauvegarde, **dupliquer** candidature, export **CSV** simple si prioritaire avant JSON complet.
 
 **Indicateur de succès** : sauvegarde JSON rejouable ; build vert sur le dépôt distant.
 
 ### Phase 2 — Usage quotidien *(moyen terme)*
 
-1. Encart ou filtre **relances par date** (`follow_up_date`).
-2. **Recherche étendue** aux notes et métadonnées.
-3. **Accessibilité** modales et navigation clavier.
-4. Aide in-app courte ou section README avancée (import, doublons, déploiement).
+1. Encart ou filtre **relances par date** (`follow_up_date`) ; rappels / badges « en attente depuis X jours » *(voir backlog UX § relances)*.
+2. **Recherche étendue** aux notes et métadonnées ; option **Ctrl+K** / filtres favoris si pertinent.
+3. **Auto-`date_applied`** lors du passage **à envoyer → envoyée** + message utilisateur *(backlog UX priorité haute)*.
+4. **Accessibilité** modales et navigation clavier ; **raccourcis** (N, E, /, …) en complément progressif.
+5. Aide in-app courte ou section README avancée (import, doublons, déploiement).
 
 **Indicateur de succès** : parcours import → filtre → relance → export documenté et utilisable au clavier.
 
@@ -115,13 +180,13 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 1. ~~Refactor modulaire + TypeScript~~ — **amorcé** (base actuelle) ; poursuivre découpage et réduction du « god context » si besoin.
 2. ~~**PWA**~~ — **fait** (build prod) ; affiner icônes PNG multi-tailles si nécessaire stores / install.
 3. Couverture **tests** ciblés + **lint** strict sur les PR.
-4. **Base SQL** ou API externe si montée en charge ou besoin multi-utilisateurs.
+4. ~~**Base SQL** multi-utilisateur~~ — **amorcé** (Supabase + `user_id` + Clerk) ; stabiliser **build prod** et monitoring.
 
 **Indicateur de succès** : changement de règle métier (ex. doublon) couvert par au moins un test.
 
 ### Phase 4 — Vision *(long terme)*
 
-- Auth, sync, Kanban avancé, intégrations calendrier / ATS.
+- ~~Auth~~ **Clerk livré** ; affiner **sync** et **collaboration** ; **Kanban** avec **drag & drop**, vues **calendrier / timeline**, intégrations (calendrier, ATS, LinkedIn / e-mail), **analytics** poussés *(backlog UX §4)*.
 
 ---
 
@@ -140,6 +205,8 @@ Suivi de candidatures — **monorepo** basé sur **Next.js 15** (UI + API intég
 | 1.0 | 2026-03-29 | Première roadmap (SPA, restructuration fichiers). |
 | 1.1 | 2026-03-29 | Monorepo, persistance, Express puis Next. |
 | **1.2** | **2026-03-29** | Alignement **Next.js + PWA**, **v0.1.0**, dépôt **GitHub**, livrables barrés / phases réalistes, limites actuelles. |
+| **1.3** | **2026-03-29** | **Backlog UX/UI & QoL** intégré : tableau **doublons vs roadmap**, nouveautés, quick wins, priorisation sprints ; phases 1–2–4 ajustées. |
+| **1.4** | **2026-03-29** | **v0.2.0** : Clerk, Supabase `user_id` + modes service role / JWT RLS, prompts Comet & Cursor, correctifs UI ; roadmap et limites mises à jour. |
 
 ---
 

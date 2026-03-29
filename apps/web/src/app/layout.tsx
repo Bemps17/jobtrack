@@ -1,5 +1,6 @@
 import { Providers } from "@/components/providers";
 import { APP_VERSION } from "@/lib/version";
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -42,8 +43,17 @@ export default function RootLayout({
     <html lang="fr" data-theme="dark" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        suppressHydrationWarning
       >
-        <Providers>{children}</Providers>
+        <ClerkProvider
+          appearance={{
+            variables: { colorPrimary: "#4f8ef7" },
+          }}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+        >
+          <Providers>{children}</Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

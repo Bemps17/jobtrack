@@ -1,10 +1,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { useClerkJwtForSupabase } from "@/server/supabase-clerk";
+
 export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!url) return false;
+  if (useClerkJwtForSupabase()) {
+    return Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim());
+  }
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
 }
 
 export function createSupabaseAdmin(): SupabaseClient {

@@ -27,16 +27,31 @@ async function writeCandidaturesToFile(list: unknown[]): Promise<void> {
   await writeFile(DATA_FILE, JSON.stringify(list, null, 2), "utf8");
 }
 
-export async function readCandidatures(): Promise<unknown[]> {
+export async function readCandidatures(
+  clerkUserId?: string | null
+): Promise<unknown[]> {
   if (isSupabaseConfigured()) {
-    return readCandidaturesFromSupabase();
+    if (!clerkUserId) {
+      throw new Error(
+        "Lecture Supabase : identifiant Clerk requis (session utilisateur)."
+      );
+    }
+    return readCandidaturesFromSupabase(clerkUserId);
   }
   return readCandidaturesFromFile();
 }
 
-export async function writeCandidatures(list: unknown[]): Promise<void> {
+export async function writeCandidatures(
+  list: unknown[],
+  clerkUserId?: string | null
+): Promise<void> {
   if (isSupabaseConfigured()) {
-    await writeCandidaturesToSupabase(list);
+    if (!clerkUserId) {
+      throw new Error(
+        "Écriture Supabase : identifiant Clerk requis (session utilisateur)."
+      );
+    }
+    await writeCandidaturesToSupabase(list, clerkUserId);
     return;
   }
   await writeCandidaturesToFile(list);

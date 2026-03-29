@@ -100,5 +100,5 @@ COMMENT ON TABLE public.candidatures IS 'Candidatures JobTrack v0.1.0';
 ## Notes pour toi (développeur)
 
 - **RLS activé sans policy** bloque tout accès via clé `anon`. Pour un premier branchement **100 % serveur** (Route Handlers Next + `service_role`), crée une policy réservée au service role ou utilise le client admin côté serveur uniquement.
-- Évolution propre : ajouter `user_id UUID REFERENCES auth.users(id)` + policies `USING (auth.uid() = user_id)`.
+- **Auth Clerk (retenu)** : pas `auth.users` Supabase — colonne **`user_id TEXT`** = id Clerk (`user_…`), filtre côté API avec service role ; RLS optionnelle avec JWT Clerk : voir **`prompts/supabase-user-id-clerk-rls.sql`** et **`prompts/comet-clerk.md`**.
 - Migration depuis `candidatures.json` : script Node ou import CSV depuis l’app une fois l’API Supabase branchée.

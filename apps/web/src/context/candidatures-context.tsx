@@ -64,10 +64,28 @@ async function persistList(list: Candidature[], show: (m: string, t?: "error") =
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
     });
-    if (!r.ok) throw new Error(await r.text());
+    if (!r.ok) {
+      const text = await r.text();
+      let msg = text;
+      try {
+        const j = JSON.parse(text) as { details?: string; error?: string };
+        if (j.details) msg = j.details;
+        else if (j.error) msg = j.error;
+      } catch {
+        /* text brut */
+      }
+      throw new Error(msg);
+    }
   } catch (e) {
     console.error(e);
-    show("Sauvegarde serveur impossible.", "error");
+    const msg =
+      e instanceof Error && e.message
+        ? e.message
+        : "Sauvegarde serveur impossible.";
+    show(
+      msg.length > 180 ? `${msg.slice(0, 177)}…` : msg,
+      "error"
+    );
   }
 }
 

@@ -1,0 +1,2 @@
+﻿company,job_title,contract_type,location,work_mode,source,job_url,date_found,date_applied,status,priority,salary,contact_name,contact_email,follow_up_date,notes
+"Acme Corp","Développeur Front-End","CDI","Paris","hybride","LinkedIn","https://example.com/offre","2026-03-29","","à envoyer","haute","45k-55k","Sophie Martin","s.martin@acme.com","","React TypeScript, produit SaaS"

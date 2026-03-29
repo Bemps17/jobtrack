@@ -1,5 +1,6 @@
 "use client";
 
+import { ClerkAuthMenu } from "@/components/clerk-auth-menu";
 import { useCandidatures } from "@/context/candidatures-context";
 import { useShellModals } from "@/context/shell-modals-context";
 import { useTheme } from "@/context/theme-context";
@@ -70,6 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         </nav>
         <div className="pt-3 border-t border-[var(--border)] space-y-2">
+          <ClerkAuthMenu />
           <button
             type="button"
             className="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-[var(--text2)] hover:bg-[var(--surface2)] w-full text-left"
