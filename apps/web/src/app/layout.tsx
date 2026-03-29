@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   description: `Suivi de candidatures — version ${APP_VERSION}`,
   applicationName: "JobTrack",
   manifest: "/manifest.webmanifest",
+  /**
+   * Favicon et icônes Apple : fichiers générés dans `src/app/`
+   * (`favicon.ico`, `icon.png`, `apple-icon.png`) via `npm run icons:generate`
+   * depuis `public/icons/job1.png`.
+   */
   appleWebApp: {
     capable: true,
     title: "JobTrack",
